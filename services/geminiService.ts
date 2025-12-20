@@ -2,6 +2,8 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { ClothingItem, Category, WeatherCondition, Gender, IllustrationStyle } from "../types";
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY;
+
 /**
  * Utility to fetch an image and convert it to base64
  */
@@ -47,7 +49,7 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Pr
 
 export const analyzeClothing = async (base64Image: string): Promise<{ category: Category; description: string; color: string }> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [
@@ -80,7 +82,7 @@ export const analyzeClothing = async (base64Image: string): Promise<{ category: 
  */
 export const generateNewClothingItem = async (gender: Gender): Promise<Omit<ClothingItem, 'id'>> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     
     // Step 1: Brainstorm the item details
     const ideaResponse = await ai.models.generateContent({
@@ -142,7 +144,7 @@ export const selectBestOutfit = async (
   previousIds: string[] = []
 ): Promise<{ selectedIds: string[]; stylistNote: string }> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     const shuffledCloset = [...closet].sort(() => Math.random() - 0.5);
     const closetPrompt = shuffledCloset.map(item => `ID: ${item.id}, Cat: ${item.category}, Desc: ${item.description}, Color: ${item.color}`).join('\n');
     
@@ -188,7 +190,7 @@ export const generateAvatarIllustration = async (
   style: IllustrationStyle
 ): Promise<string> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     const itemParts = await Promise.all(
       selectedItems.map(async (item) => {
         try {

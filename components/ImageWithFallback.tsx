@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Gender } from '../types';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -17,6 +17,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 }) => {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const themeClasses = theme === 'girl' 
     ? "bg-rose-50 text-rose-200 border-rose-100 text-rose-300" 
@@ -27,6 +28,18 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   // Extract filename from path for helpful error message
   // Fix: Handle case where src might be typed as string | Blob | undefined
   const fileName = typeof src === 'string' ? src.split('/').pop() || 'image' : 'image';
+
+  useEffect(() => {
+    setError(false);
+    setLoading(true);
+  }, [src]);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) {
+      setLoading(false);
+    }
+  }, [src]);
 
   if (error || !src) {
     return (
@@ -49,6 +62,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       )}
       <img
         {...props}
+        ref={imgRef}
         src={typeof src === 'string' ? src : undefined}
         alt={alt}
         className={`${className} ${loading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}

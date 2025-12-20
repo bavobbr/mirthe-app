@@ -5,44 +5,29 @@ import { analyzeClothing, selectBestOutfit, generateAvatarIllustration, generate
 import { Button } from './components/Button';
 import { ImageWithFallback } from './components/ImageWithFallback';
 
+const CLOTHES_BASE_URL = `${import.meta.env.BASE_URL}clothes/`;
+
 const DEFAULT_CLOSET: ClothingItem[] = [
-  // TOPS (1-8)
-  { id: 'top-1', url: '/clothes/top1.png', category: 'Shirt', description: 'Classic red and white horizontal striped short-sleeve t-shirt', color: 'Red' },
-  { id: 'top-2', url: '/clothes/top2.png', category: 'Shirt', description: 'Grey and black plaid long-sleeve flannel button-up shirt', color: 'Grey' },
-  { id: 'top-3', url: '/clothes/top3.webp', category: 'Shirt', description: 'White graphic tee with a red rose and "GIRL POWER" text', color: 'White' },
-  { id: 'top-4', url: '/clothes/top4.jpg', category: 'Shirt', description: 'White graphic tee with red lips and "WOMEN POWER" text', color: 'White' },
-  { id: 'top-5', url: '/clothes/top5.webp', category: 'Shirt', description: 'Pink t-shirt with a cute unicorn and "Lieke" name print', color: 'Pink' },
-  { id: 'top-6', url: '/clothes/top6.png', category: 'Sweater', description: 'Warm chocolate brown cable-knit wool sweater', color: 'Brown' },
-  { id: 'top-7', url: '/clothes/top7.jpg', category: 'Sweater', description: 'Beige knit sweater with a pink cat face embroidery', color: 'Beige' },
-  { id: 'top-8', url: '/clothes/top8.jpg', category: 'Sweater', description: 'Vibrant chunky rainbow horizontal striped turtleneck', color: 'Multi' },
-  
-  // BOTTOMS (1-5)
-  { id: 'bt-1', url: '/clothes/bottom1.png', category: 'Bottom', description: 'Tan high-waisted pleated wide-leg trousers', color: 'Tan' },
-  { id: 'bt-2', url: '/clothes/bottom2.png', category: 'Bottom', description: 'Classic mid-wash blue denim straight-leg jeans', color: 'Blue' },
-  { id: 'bt-3', url: '/clothes/bottom3.jpg', category: 'Bottom', description: 'Dark grey denim jeans with colorful flower patches', color: 'Grey' },
-  { id: 'bt-4', url: '/clothes/bottom4.jpg', category: 'Bottom', description: 'Light blue denim jeans with floral embroidery details', color: 'Light Blue' },
-  { id: 'bt-5', url: '/clothes/bottom5.jpg', category: 'Bottom', description: 'Vertical rainbow striped slim-fit leggings', color: 'Multi' },
-  
-  // SKIRTS (1-3)
-  { id: 'sk-1', url: '/clothes/skirt1.jpg', category: 'Skirt', description: 'Black midi skirt with large white polka dots', color: 'Black' },
-  { id: 'sk-2', url: '/clothes/skirt2.jpg', category: 'Skirt', description: 'Red and black checkered pleated school-style skirt', color: 'Red' },
-  { id: 'sk-3', url: '/clothes/skirt3.jpg', category: 'Skirt', description: 'Navy blue pleated athletic tennis skirt', color: 'Navy' },
-  
-  // DRESSES (1-2)
-  { id: 'dr-1', url: '/clothes/dress1.png', category: 'Dress', description: 'Forest green floral midi dress with puff sleeves', color: 'Green' },
-  { id: 'dr-2', url: '/clothes/dress2.webp', category: 'Dress', description: 'Light blue eyelet lace cotton summer dress', color: 'Blue' },
-  
-  // SHOES (1-6)
-  { id: 'sh-1', url: '/clothes/shoes1.jpg', category: 'Shoes', description: 'Glossy burgundy patent leather ankle boots', color: 'Burgundy' },
-  { id: 'sh-2', url: '/clothes/shoes2.jpg', category: 'Shoes', description: 'Chunky white platform fashion sneakers', color: 'White' },
-  { id: 'sh-3', url: '/clothes/shoes3.webp', category: 'Shoes', description: 'Black mesh high heels with ankle strap', color: 'Black' },
-  { id: 'sh-4', url: '/clothes/shoes4.webp', category: 'Shoes', description: 'Black mesh slip-on athletic sneakers', color: 'Black' },
-  { id: 'sh-5', url: '/clothes/shoes5.jpg', category: 'Shoes', description: 'Bright pink and grey athletic running shoes', color: 'Pink' },
-  
-  // ACCESSORIES (1-3)
-  { id: 'ac-1', url: '/clothes/acc1.jpg', category: 'Accessory', description: 'Beige straw sun hat with pink flower accent', color: 'Beige' },
-  { id: 'ac-2', url: '/clothes/acc2.jpg', category: 'Accessory', description: 'Wide-brimmed white summer straw hat', color: 'White' },
-  { id: 'ac-3', url: '/clothes/acc3.jpg', category: 'Accessory', description: 'Black vintage cloche hat with rhinestone trim', color: 'Black' }
+  { id: 'ahlens-women-s-cigarette-trousers', url: `${CLOTHES_BASE_URL}ahlens-women-s-cigarette-trousers.jpg`, category: 'Bottom', description: 'Vintage high-waisted pleated trousers with a tapered leg, crafted from a velvet-like fabric.', color: 'Burgundy' },
+  { id: 'another-woman-women-s-skirt', url: `${CLOTHES_BASE_URL}another-woman-women-s-skirt.jpg`, category: 'Skirt', description: 'A short pleated skirt featuring a brown and grey plaid pattern with a dark denim belted waistband.', color: 'Brown' },
+  { id: 'bally-women-s-crossbody-bag', url: `${CLOTHES_BASE_URL}bally-women-s-crossbody-bag.jpg`, category: 'Accessory', description: 'a small red rectangular crossbody purse with a long thin strap', color: 'red' },
+  { id: 'camera-women-s-dress', url: `${CLOTHES_BASE_URL}camera-women-s-dress.jpg`, category: 'Dress', description: 'A sleeveless, midi slip dress with thin spaghetti straps and a straight neckline, featuring a slightly sheer fabric layer.', color: 'Dark purple' },
+  { id: 'chelsea-theodore-women-s-dress', url: `${CLOTHES_BASE_URL}chelsea-theodore-women-s-dress.jpg`, category: 'Dress', description: 'sleeveless high-neck dress with textured details on the chest', color: 'dark brown' },
+  { id: 'clock-house-women-s-shorts', url: `${CLOTHES_BASE_URL}clock-house-women-s-shorts.webp`, category: 'Bottom', description: 'High-waisted belted shorts featuring a light green and cream plaid pattern with front pleats.', color: 'Green' },
+  { id: 'deerberg-women-s-wool-cardigan', url: `${CLOTHES_BASE_URL}deerberg-women-s-wool-cardigan.jpg`, category: 'Sweater', description: 'A long-sleeved button-up knit cardigan featuring an intricate blue and white geometric pattern with brown and light blue striped accents at the cuffs and hem.', color: 'blue and white' },
+  { id: 'dockers-men-s-pleated-trousers', url: `${CLOTHES_BASE_URL}dockers-men-s-pleated-trousers.jpg`, category: 'Bottom', description: 'A pair of black pleated trousers with a straight-leg cut and belt loops.', color: 'black' },
+  { id: 'dolce-gabbana-women-s-knitted-vest', url: `${CLOTHES_BASE_URL}dolce-gabbana-women-s-knitted-vest.jpg`, category: 'Sweater', description: 'A dark olive green knitted sweater vest featuring a V-neck and contrasting ochre-colored fuzzy trim at the collar, armholes, and hem.', color: 'dark olive green' },
+  { id: 'dr-martens-men-s-real-leather-flats', url: `${CLOTHES_BASE_URL}dr-martens-men-s-real-leather-flats.jpg`, category: 'Shoes', description: 'black lace-up leather oxford shoe with a thick sole', color: 'black' },
+  { id: 'edgar-vos-women-s-straight-trousers', url: `${CLOTHES_BASE_URL}edgar-vos-women-s-straight-trousers.jpg`, category: 'Bottom', description: 'High-waisted wide-leg trousers featuring a subtle pinstripe pattern, a decorative buttoned flap pocket, and pink button closures.', color: 'Mauve' },
+  { id: 'gaby-mersmann-women-s-wool-tailored-trousers', url: `${CLOTHES_BASE_URL}gaby-mersmann-women-s-wool-tailored-trousers.jpg`, category: 'Bottom', description: 'High-waisted pleated wide-leg trousers featuring a buttoned waistband and a front crease.', color: 'dark grey' },
+  { id: 'hugo-boss-men-s-wool-crew-neck-sweater', url: `${CLOTHES_BASE_URL}hugo-boss-men-s-wool-crew-neck-sweater.jpg`, category: 'Sweater', description: 'An olive green textured knit sweater with a crew neck and ribbed cuffs and hem.', color: 'Olive green' },
+  { id: 'ok-sport-women-s-dress', url: `${CLOTHES_BASE_URL}ok-sport-women-s-dress.jpg`, category: 'Dress', description: 'A pale yellow corduroy sleeveless overall dress with metal buckles on the shoulder straps and two front patch pockets.', color: 'Pale Yellow' },
+  { id: 'screen-stars-women-s-t-shirt', url: `${CLOTHES_BASE_URL}screen-stars-women-s-t-shirt.jpg`, category: 'Shirt', description: 'A red short-sleeved t-shirt featuring a large graphic print of a Coca-Cola bottle and the iconic brand logo.', color: 'red' },
+  { id: 'studio-men-s-cashmere-roll-neck-sweater', url: `${CLOTHES_BASE_URL}studio-men-s-cashmere-roll-neck-sweater.jpg`, category: 'Sweater', description: 'a long-sleeved purple turtleneck sweater with ribbed cuffs and hem', color: 'purple' },
+  { id: 'tiger-of-sweden-women-s-skirt', url: `${CLOTHES_BASE_URL}tiger-of-sweden-women-s-skirt.jpg`, category: 'Skirt', description: 'A black mini skirt featuring thin vertical tan pinstripes, a waistband with belt loops, and a front button closure.', color: 'Black' },
+  { id: 'vintage-men-s-cashmere-roll-neck-sweater', url: `${CLOTHES_BASE_URL}vintage-men-s-cashmere-roll-neck-sweater.webp`, category: 'Sweater', description: 'A camel-colored long-sleeved turtleneck sweater with ribbed cuffs and hem.', color: 'camel' },
+  { id: 'vintage-women-s-clutch-bag', url: `${CLOTHES_BASE_URL}vintage-women-s-clutch-bag.webp`, category: 'Accessory', description: 'A vintage-style black leather clutch featuring a crocodile-patterned flap and a gold-toned U-shaped buckle detail.', color: 'Black' },
+  { id: 'vintage-women-s-crossbody-bag', url: `${CLOTHES_BASE_URL}vintage-women-s-crossbody-bag.webp`, category: 'Accessory', description: 'A small navy blue crossbody bag with a gold diagonal pinstripe and star pattern, featuring a gold-tone hexagonal clasp and a long, thin gold chain strap.', color: 'Navy Blue' },
 ];
 
 const App: React.FC = () => {
@@ -54,7 +39,7 @@ const App: React.FC = () => {
   
   const [gender, setGender] = useState<Gender>('girl');
   const [weather, setWeather] = useState<WeatherCondition>({ condition: 'Sunny' });
-  const [illustrationStyle, setIllustrationStyle] = useState<IllustrationStyle>('hand-drawn');
+  const [illustrationStyle, setIllustrationStyle] = useState<IllustrationStyle>('realistic');
   const [generatedOutfit, setGeneratedOutfit] = useState<GeneratedOutfit | null>(null);
   const [error, setError] = useState<string | null>(null);
   
@@ -270,7 +255,7 @@ const App: React.FC = () => {
               )}
               {closet.map((item) => (
                 <div key={item.id} className={`group relative ${t.bgCardAccent} rounded-2xl overflow-hidden aspect-square border ${t.borderAccent} ${t.hoverBorder} transition-all shadow-sm`}>
-                  <ImageWithFallback theme={gender} src={item.url} alt={item.description} className="w-full h-full object-cover" />
+                  <ImageWithFallback theme={gender} src={item.url} alt={item.description} className="w-full h-full object-contain bg-white" />
                   <div className={`absolute inset-0 ${gender === 'girl' ? 'bg-rose-950/50' : 'bg-blue-950/50'} opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 backdrop-blur-[2px]`}>
                     <p className={`text-white text-[10px] uppercase font-black tracking-widest ${gender === 'girl' ? 'bg-rose-600/60' : 'bg-blue-600/60'} px-2 py-0.5 rounded w-fit mb-1`}>{item.category}</p>
                     <p className="text-white text-[10px] truncate font-medium">{item.description}</p>
