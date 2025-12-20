@@ -1,5 +1,5 @@
 
-export type Category = 'Top' | 'Bottom' | 'Shoes' | 'Accessory' | 'Outerwear';
+export type Category = 'Top' | 'Bottom' | 'Shoes' | 'Accessory' | 'Outerwear' | 'Shirt' | 'Sweater' | 'Skirt' | 'Dress';
 
 export interface ClothingItem {
   id: string;
@@ -10,9 +10,9 @@ export interface ClothingItem {
 }
 
 export type Gender = 'boy' | 'girl';
+export type IllustrationStyle = 'hand-drawn' | 'realistic' | 'cartoon';
 
 export interface WeatherCondition {
-  temp: number;
   condition: string;
 }
 
@@ -20,4 +20,5 @@ export interface GeneratedOutfit {
   items: ClothingItem[];
   stylistNote: string;
   illustrationUrl?: string;
+  style: IllustrationStyle;
 }
