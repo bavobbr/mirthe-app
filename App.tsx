@@ -7,42 +7,42 @@ import { ImageWithFallback } from './components/ImageWithFallback';
 
 const DEFAULT_CLOSET: ClothingItem[] = [
   // TOPS (1-8)
-  { id: 'top-1', url: 'clothes/top1.png', category: 'Shirt', description: 'Classic red and white horizontal striped short-sleeve t-shirt', color: 'Red' },
-  { id: 'top-2', url: 'clothes/top2.png', category: 'Shirt', description: 'Grey and black plaid long-sleeve flannel button-up shirt', color: 'Grey' },
-  { id: 'top-3', url: 'clothes/top3.webp', category: 'Shirt', description: 'White graphic tee with a red rose and "GIRL POWER" text', color: 'White' },
-  { id: 'top-4', url: 'clothes/top4.png', category: 'Shirt', description: 'White graphic tee with red lips and "WOMEN POWER" text', color: 'White' },
-  { id: 'top-5', url: 'clothes/top5.webp', category: 'Shirt', description: 'Pink t-shirt with a cute unicorn and "Lieke" name print', color: 'Pink' },
-  { id: 'top-6', url: 'clothes/top6.png', category: 'Sweater', description: 'Warm chocolate brown cable-knit wool sweater', color: 'Brown' },
-  { id: 'top-7', url: 'clothes/top7.png', category: 'Sweater', description: 'Beige knit sweater with a pink cat face embroidery', color: 'Beige' },
-  { id: 'top-8', url: 'clothes/top8.png', category: 'Sweater', description: 'Vibrant chunky rainbow horizontal striped turtleneck', color: 'Multi' },
+  { id: 'top-1', url: '/clothes/top1.png', category: 'Shirt', description: 'Classic red and white horizontal striped short-sleeve t-shirt', color: 'Red' },
+  { id: 'top-2', url: '/clothes/top2.png', category: 'Shirt', description: 'Grey and black plaid long-sleeve flannel button-up shirt', color: 'Grey' },
+  { id: 'top-3', url: '/clothes/top3.webp', category: 'Shirt', description: 'White graphic tee with a red rose and "GIRL POWER" text', color: 'White' },
+  { id: 'top-4', url: '/clothes/top4.jpg', category: 'Shirt', description: 'White graphic tee with red lips and "WOMEN POWER" text', color: 'White' },
+  { id: 'top-5', url: '/clothes/top5.webp', category: 'Shirt', description: 'Pink t-shirt with a cute unicorn and "Lieke" name print', color: 'Pink' },
+  { id: 'top-6', url: '/clothes/top6.png', category: 'Sweater', description: 'Warm chocolate brown cable-knit wool sweater', color: 'Brown' },
+  { id: 'top-7', url: '/clothes/top7.jpg', category: 'Sweater', description: 'Beige knit sweater with a pink cat face embroidery', color: 'Beige' },
+  { id: 'top-8', url: '/clothes/top8.jpg', category: 'Sweater', description: 'Vibrant chunky rainbow horizontal striped turtleneck', color: 'Multi' },
   
   // BOTTOMS (1-5)
-  { id: 'bt-1', url: 'clothes/bottom1.png', category: 'Bottom', description: 'Tan high-waisted pleated wide-leg trousers', color: 'Tan' },
-  { id: 'bt-2', url: 'clothes/bottom2.png', category: 'Bottom', description: 'Classic mid-wash blue denim straight-leg jeans', color: 'Blue' },
-  { id: 'bt-3', url: 'clothes/bottom3.jpg', category: 'Bottom', description: 'Dark grey denim jeans with colorful flower patches', color: 'Grey' },
-  { id: 'bt-4', url: 'clothes/bottom4.jpg', category: 'Bottom', description: 'Light blue denim jeans with floral embroidery details', color: 'Light Blue' },
-  { id: 'bt-5', url: 'clothes/bottom5.jpg', category: 'Bottom', description: 'Vertical rainbow striped slim-fit leggings', color: 'Multi' },
+  { id: 'bt-1', url: '/clothes/bottom1.png', category: 'Bottom', description: 'Tan high-waisted pleated wide-leg trousers', color: 'Tan' },
+  { id: 'bt-2', url: '/clothes/bottom2.png', category: 'Bottom', description: 'Classic mid-wash blue denim straight-leg jeans', color: 'Blue' },
+  { id: 'bt-3', url: '/clothes/bottom3.jpg', category: 'Bottom', description: 'Dark grey denim jeans with colorful flower patches', color: 'Grey' },
+  { id: 'bt-4', url: '/clothes/bottom4.jpg', category: 'Bottom', description: 'Light blue denim jeans with floral embroidery details', color: 'Light Blue' },
+  { id: 'bt-5', url: '/clothes/bottom5.jpg', category: 'Bottom', description: 'Vertical rainbow striped slim-fit leggings', color: 'Multi' },
   
   // SKIRTS (1-3)
-  { id: 'sk-1', url: 'clothes/skirt1.png', category: 'Skirt', description: 'Black midi skirt with large white polka dots', color: 'Black' },
-  { id: 'sk-2', url: 'clothes/skirt2.png', category: 'Skirt', description: 'Red and black checkered pleated school-style skirt', color: 'Red' },
-  { id: 'sk-3', url: 'clothes/skirt3.png', category: 'Skirt', description: 'Navy blue pleated athletic tennis skirt', color: 'Navy' },
+  { id: 'sk-1', url: '/clothes/skirt1.jpg', category: 'Skirt', description: 'Black midi skirt with large white polka dots', color: 'Black' },
+  { id: 'sk-2', url: '/clothes/skirt2.jpg', category: 'Skirt', description: 'Red and black checkered pleated school-style skirt', color: 'Red' },
+  { id: 'sk-3', url: '/clothes/skirt3.jpg', category: 'Skirt', description: 'Navy blue pleated athletic tennis skirt', color: 'Navy' },
   
   // DRESSES (1-2)
-  { id: 'dr-1', url: 'clothes/dress1.png', category: 'Dress', description: 'Forest green floral midi dress with puff sleeves', color: 'Green' },
-  { id: 'dr-2', url: 'clothes/dress2.webp', category: 'Dress', description: 'Light blue eyelet lace cotton summer dress', color: 'Blue' },
+  { id: 'dr-1', url: '/clothes/dress1.png', category: 'Dress', description: 'Forest green floral midi dress with puff sleeves', color: 'Green' },
+  { id: 'dr-2', url: '/clothes/dress2.webp', category: 'Dress', description: 'Light blue eyelet lace cotton summer dress', color: 'Blue' },
   
   // SHOES (1-6)
-  { id: 'sh-1', url: 'clothes/shoes1.jpg', category: 'Shoes', description: 'Glossy burgundy patent leather ankle boots', color: 'Burgundy' },
-  { id: 'sh-2', url: 'clothes/shoes2.jpg', category: 'Shoes', description: 'Chunky white platform fashion sneakers', color: 'White' },
-  { id: 'sh-3', url: 'clothes/shoes3.webp', category: 'Shoes', description: 'Black mesh high heels with ankle strap', color: 'Black' },
-  { id: 'sh-4', url: 'clothes/shoes4.webp', category: 'Shoes', description: 'Black mesh slip-on athletic sneakers', color: 'Black' },
-  { id: 'sh-5', url: 'clothes/shoes5.jpg', category: 'Shoes', description: 'Bright pink and grey athletic running shoes', color: 'Pink' },
+  { id: 'sh-1', url: '/clothes/shoes1.jpg', category: 'Shoes', description: 'Glossy burgundy patent leather ankle boots', color: 'Burgundy' },
+  { id: 'sh-2', url: '/clothes/shoes2.jpg', category: 'Shoes', description: 'Chunky white platform fashion sneakers', color: 'White' },
+  { id: 'sh-3', url: '/clothes/shoes3.webp', category: 'Shoes', description: 'Black mesh high heels with ankle strap', color: 'Black' },
+  { id: 'sh-4', url: '/clothes/shoes4.webp', category: 'Shoes', description: 'Black mesh slip-on athletic sneakers', color: 'Black' },
+  { id: 'sh-5', url: '/clothes/shoes5.jpg', category: 'Shoes', description: 'Bright pink and grey athletic running shoes', color: 'Pink' },
   
   // ACCESSORIES (1-3)
-  { id: 'ac-1', url: 'clothes/acc1.jpg', category: 'Accessory', description: 'Beige straw sun hat with pink flower accent', color: 'Beige' },
-  { id: 'ac-2', url: 'clothes/acc2.jpg', category: 'Accessory', description: 'Wide-brimmed white summer straw hat', color: 'White' },
-  { id: 'ac-3', url: 'clothes/acc3.jpg', category: 'Accessory', description: 'Black vintage cloche hat with rhinestone trim', color: 'Black' }
+  { id: 'ac-1', url: '/clothes/acc1.jpg', category: 'Accessory', description: 'Beige straw sun hat with pink flower accent', color: 'Beige' },
+  { id: 'ac-2', url: '/clothes/acc2.jpg', category: 'Accessory', description: 'Wide-brimmed white summer straw hat', color: 'White' },
+  { id: 'ac-3', url: '/clothes/acc3.jpg', category: 'Accessory', description: 'Black vintage cloche hat with rhinestone trim', color: 'Black' }
 ];
 
 const App: React.FC = () => {
