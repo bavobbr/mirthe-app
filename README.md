@@ -2,19 +2,44 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Mirthe's Closet App
 
-This contains everything you need to run your app locally.
+An AI-powered closet and outfit generator. Upload items (or use the default closet), choose a weather condition and style, and generate a full outfit plus an AI illustration.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1GzitwnYk__K1Qzp-gFtE5TiNv2ps3MyV
+## What It Does
+
+- Shows a curated closet of clothing items with categories, colors, and descriptions.
+- Lets you upload new items (file upload or camera) and auto-analyzes them.
+- Generates a styled outfit and a matching illustration from the closet.
+- Supports hand-drawn, studio (realistic), and cartoon illustration styles.
+
+## How It Is Built
+
+- Frontend: React + TypeScript + Vite.
+- AI: Gemini for clothing analysis, outfit selection, and illustration generation.
+- Styling: Tailwind utility classes in JSX.
+- Analytics: Vercel Analytics for usage insights.
+
+## Architecture
+
+- `App.tsx`: UI, state management, and user flows (upload, camera, generate).
+- `services/geminiService.ts`: AI calls for analysis, styling, and illustration generation.
+- `components/ImageWithFallback.tsx`: resilient image rendering with fallback UI.
+- `public/clothes/`: default closet images.
+- `scripts/generate-closet.mjs`: optional script to regenerate closet metadata from images.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js 18+
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Create `.env` with your Gemini key:
+   `VITE_GEMINI_API_KEY=YOUR_KEY`
+3. Start the dev server:
    `npm run dev`
+
+## Build and Preview
+
+- `npm run build`
+- `npm run preview`
