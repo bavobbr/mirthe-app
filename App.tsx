@@ -39,9 +39,11 @@ const App: React.FC = () => {
   
   const [gender, setGender] = useState<Gender>('girl');
   const [weather, setWeather] = useState<WeatherCondition>({ condition: 'Sunny' });
-  const [illustrationStyle, setIllustrationStyle] = useState<IllustrationStyle>('realistic');
+  const [illustrationStyle, setIllustrationStyle] = useState<IllustrationStyle>('hand-drawn');
   const [generatedOutfit, setGeneratedOutfit] = useState<GeneratedOutfit | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAllClosetItems, setShowAllClosetItems] = useState(false);
+  const [gridColumns, setGridColumns] = useState(2);
   
   // Camera state
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -54,6 +56,26 @@ const App: React.FC = () => {
   useEffect(() => {
     document.body.style.backgroundColor = gender === 'girl' ? '#fffafb' : '#f0f7ff';
   }, [gender]);
+
+  useEffect(() => {
+    if (!isCameraOpen || !cameraStream || !videoRef.current) return;
+    videoRef.current.srcObject = cameraStream;
+    const playPromise = videoRef.current.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {});
+    }
+  }, [isCameraOpen, cameraStream]);
+
+  useEffect(() => {
+    const updateColumns = () => {
+      const width = window.innerWidth;
+      const nextColumns = width >= 1024 ? 5 : width >= 768 ? 4 : width >= 640 ? 3 : 2;
+      setGridColumns(nextColumns);
+    };
+    updateColumns();
+    window.addEventListener('resize', updateColumns);
+    return () => window.removeEventListener('resize', updateColumns);
+  }, []);
 
   const t = useMemo(() => {
     const isGirl = gender === 'girl';
@@ -134,9 +156,8 @@ const App: React.FC = () => {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
       setCameraStream(stream);
-      if (videoRef.current) videoRef.current.srcObject = stream;
       setIsCameraOpen(true);
     } catch (err) {
       setError("Could not access camera.");
@@ -144,6 +165,9 @@ const App: React.FC = () => {
   };
 
   const stopCamera = () => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
@@ -197,6 +221,9 @@ const App: React.FC = () => {
   const removeItem = (id: string) => {
     setCloset(prev => prev.filter(item => item.id !== id));
   };
+
+  const maxVisibleItems = gridColumns * 3;
+  const visibleClosetItems = showAllClosetItems ? closet : closet.slice(0, maxVisibleItems);
 
   return (
     <div className={`min-h-screen pb-20 max-w-6xl mx-auto px-4 sm:px-6 relative transition-colors duration-500`}>
@@ -253,7 +280,7 @@ const App: React.FC = () => {
                   <span className="text-[8px] font-black uppercase opacity-50 tracking-widest">Weaving...</span>
                 </div>
               )}
-              {closet.map((item) => (
+              {visibleClosetItems.map((item) => (
                 <div key={item.id} className={`group relative ${t.bgCardAccent} rounded-2xl overflow-hidden aspect-square border ${t.borderAccent} ${t.hoverBorder} transition-all shadow-sm`}>
                   <ImageWithFallback theme={gender} src={item.url} alt={item.description} className="w-full h-full object-contain bg-white" />
                   <div className={`absolute inset-0 ${gender === 'girl' ? 'bg-rose-950/50' : 'bg-blue-950/50'} opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 backdrop-blur-[2px]`}>
@@ -266,6 +293,18 @@ const App: React.FC = () => {
                 </div>
               ))}
             </div>
+            {closet.length > maxVisibleItems && (
+              <div className="flex justify-center mt-6">
+                <Button
+                  theme={gender}
+                  variant="outline"
+                  onClick={() => setShowAllClosetItems(prev => !prev)}
+                  className="text-xs py-2 px-4"
+                >
+                  {showAllClosetItems ? 'Show less' : 'Show more'}
+                </Button>
+              </div>
+            )}
           </section>
 
           {error && (
@@ -325,7 +364,7 @@ const App: React.FC = () => {
       {isCameraOpen && (
         <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
           <div className="relative w-full max-w-md aspect-[3/4] bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
-            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
             <canvas ref={canvasRef} className="hidden" />
             <div className="absolute bottom-8 left-0 right-0 flex justify-center items-center gap-8">
               <button onClick={stopCamera} className="bg-white/20 p-4 rounded-full text-white"><svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
