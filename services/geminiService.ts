@@ -31,6 +31,48 @@ const urlToBase64 = async (url: string): Promise<{ data: string, mimeType: strin
   }
 };
 
+const downscaleBase64Image = async (
+  base64Data: string,
+  mimeType: string,
+  maxDimension = 640,
+  quality = 0.75
+): Promise<{ data: string, mimeType: string }> => {
+  const dataUrl = `data:${mimeType};base64,${base64Data}`;
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Failed to load image for resize'));
+    image.src = dataUrl;
+  });
+
+  const maxSide = Math.max(img.width, img.height);
+  if (maxSide <= maxDimension) {
+    return { data: base64Data, mimeType };
+  }
+
+  const scale = maxDimension / maxSide;
+  const targetWidth = Math.round(img.width * scale);
+  const targetHeight = Math.round(img.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return { data: base64Data, mimeType };
+  }
+  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+  const outputMimeType = 'image/jpeg';
+  const resizedDataUrl = canvas.toDataURL(outputMimeType, quality);
+  const resizedData = resizedDataUrl.split(',')[1] || base64Data;
+  return { data: resizedData, mimeType: outputMimeType };
+};
+
+const prepareInlineImage = async (url: string): Promise<{ data: string, mimeType: string }> => {
+  const { data, mimeType } = await urlToBase64(url);
+  return downscaleBase64Image(data, mimeType);
+};
+
 /**
  * Utility to retry API calls that fail due to rate limiting (429)
  */
@@ -194,7 +236,7 @@ export const generateAvatarIllustration = async (
     const itemParts = await Promise.all(
       selectedItems.map(async (item) => {
         try {
-          const { data, mimeType } = await urlToBase64(item.url);
+          const { data, mimeType } = await prepareInlineImage(item.url);
           return { inlineData: { data, mimeType } };
         } catch (e) {
           return null;
