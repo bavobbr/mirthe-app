@@ -100,7 +100,7 @@ const App: React.FC = () => {
   const t = useTheme(gender);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval>;
     if (isGenerating) {
       setTimer(0);
       setLoadingMessage(loadingMessages[0]);
@@ -113,7 +113,9 @@ const App: React.FC = () => {
         }
       }, 3000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isGenerating]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
