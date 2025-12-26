@@ -20,7 +20,7 @@ const urlToBase64 = async (url: string): Promise<{ data: string, mimeType: strin
     const mimeType = header.split(':')[1].split(';')[0];
     return { data, mimeType };
   }
-  
+
   try {
     const response = await fetch(url);
     const blob = await response.blob();
@@ -103,7 +103,7 @@ export const analyzeClothing = async (
   return withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: [
         {
           parts: [
@@ -135,15 +135,15 @@ export const analyzeClothing = async (
 export const generateNewClothingItem = async (gender: Gender): Promise<Omit<ClothingItem, 'id'>> => {
   return withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getApiKey() });
-    
+
     // Step 1: Brainstorm the item details
     const ideaResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Dream up a unique, high-fashion clothing item for a ${gender}. 
+      model: 'gemini-2.0-flash',
+      contents: `Dream up a unique, high-fashion clothing item for a ${gender === 'girl' ? 'stylish young woman' : 'fashionable young man'}. 
       Pick a random category from: Shirt, Sweater, Bottom, Skirt, Dress, Shoes, or Accessory.
-      Provide a creative description and a specific color. 
+      Provide a professional fashion description and a specific color. 
       Also provide a detailed visual prompt for an image generator to create this item on a clean white background. 
-      The item should look realistic and trendy.`,
+      The item should look realistic, sophisticated, and trendy.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -199,7 +199,7 @@ export const selectBestOutfit = async (
     const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const shuffledCloset = [...closet].sort(() => Math.random() - 0.5);
     const closetPrompt = shuffledCloset.map(item => `ID: ${item.id}, Cat: ${item.category}, Desc: ${item.description}, Color: ${item.color}`).join('\n');
-    
+
     const prompt = `
       You are a professional fashion stylist.
       User Info: Gender: ${gender}, Weather: ${weather.condition}
@@ -216,7 +216,7 @@ export const selectBestOutfit = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -255,7 +255,7 @@ export const generateAvatarIllustration = async (
     );
 
     const validItemParts = itemParts.filter(p => p !== null);
-    
+
     let stylePrompt = '';
     if (style === 'hand-drawn') {
       stylePrompt = 'A charming, hand-drawn colored illustration, minimalist, clean, with soft watercolor-like colors and clean line art. artistic sketch.';
@@ -266,8 +266,9 @@ export const generateAvatarIllustration = async (
     }
 
     const textPrompt = `
-      Generate a cute ${gender} avatar in ${weather.condition} weather.
+      Generate a professional fashion avatar illustration of a ${gender === 'girl' ? 'young adult woman' : 'young adult man'} in ${weather.condition} weather.
       Style: ${stylePrompt}
+      Characters are focused on high-fashion editorial aesthetics.
       Wear these exact items:
       ${selectedItems.map(i => `- ${i.category}: ${i.color} ${i.description}`).join('\n')}
       Be faithful to the reference images provided.
@@ -281,7 +282,9 @@ export const generateAvatarIllustration = async (
           { text: textPrompt }
         ]
       },
-      config: { imageConfig: { aspectRatio: "1:1" } }
+      config: {
+        imageConfig: { aspectRatio: "1:1" }
+      }
     });
 
     let imageUrl = '';

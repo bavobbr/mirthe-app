@@ -36,7 +36,7 @@ const App: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingItem, setIsGeneratingItem] = useState(false);
-  
+
   const [gender, setGender] = useState<Gender>('girl');
   const [weather, setWeather] = useState<WeatherCondition>({ condition: 'Sunny' });
   const [illustrationStyle, setIllustrationStyle] = useState<IllustrationStyle>('hand-drawn');
@@ -44,11 +44,41 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAllClosetItems, setShowAllClosetItems] = useState(false);
   const [gridColumns, setGridColumns] = useState(2);
-  
+
   // Camera state
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  
+
+  // Loading state
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [timer, setTimer] = useState(0);
+  const loadingMessages = [
+    "Analyzing your style...",
+    "Checking the weather...",
+    "Finding matching items...",
+    "Sketching the outfit...",
+    "Adding final touches...",
+    "Nearly there...",
+    "Making it fabulous..."
+  ];
+
+  useEffect(() => {
+    let interval: any;
+    if (isGenerating) {
+      setTimer(0);
+      setLoadingMessage(loadingMessages[0]);
+      let msgIndex = 0;
+      interval = setInterval(() => {
+        setTimer(prev => prev + 1);
+        if (msgIndex < loadingMessages.length - 1) {
+          msgIndex++;
+          setLoadingMessage(loadingMessages[msgIndex]);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isGenerating]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,7 +92,7 @@ const App: React.FC = () => {
     videoRef.current.srcObject = cameraStream;
     const playPromise = videoRef.current.play();
     if (playPromise?.catch) {
-      playPromise.catch(() => {});
+      playPromise.catch(() => { });
     }
   }, [isCameraOpen, cameraStream]);
 
@@ -215,6 +245,8 @@ const App: React.FC = () => {
       const previousIds = generatedOutfit?.items.map(item => item.id) || [];
       let selectedItems;
       let stylistNote;
+
+      // Phase 1: Selection
       if (forceNewSelection || !generatedOutfit) {
         const selection = await selectBestOutfit(closet, weather, gender, previousIds);
         selectedItems = closet.filter(item => selection.selectedIds.includes(item.id));
@@ -228,12 +260,16 @@ const App: React.FC = () => {
           selectedItems = retryItems;
           stylistNote = retrySelection.stylistNote;
         }
+        // Update state with selection immediately
+        setGeneratedOutfit({ items: selectedItems, stylistNote, illustrationUrl: '', style: targetStyle });
       } else {
         selectedItems = generatedOutfit.items;
         stylistNote = generatedOutfit.stylistNote;
       }
+
+      // Phase 2: Illustration
       const illustrationUrl = await generateAvatarIllustration(selectedItems, gender, weather, targetStyle);
-      setGeneratedOutfit({ items: selectedItems, stylistNote, illustrationUrl, style: targetStyle });
+      setGeneratedOutfit(prev => prev ? { ...prev, illustrationUrl, style: targetStyle } : null);
       setIllustrationStyle(targetStyle);
     } catch (err: any) {
       const message = err?.message?.includes('Missing VITE_GEMINI_API_KEY')
@@ -275,7 +311,7 @@ const App: React.FC = () => {
               </div>
               <div>
                 <label className={`block text-sm font-bold ${t.textAccent} mb-2`}>Weather Condition</label>
-                <select 
+                <select
                   className={`w-full border-2 ${gender === 'girl' ? 'border-rose-50' : 'border-blue-50'} rounded-full px-4 py-2 text-sm focus:outline-none bg-white ${t.textAccent} font-medium transition-colors`}
                   value={weather.condition}
                   onChange={(e) => setWeather({ condition: e.target.value })}
@@ -349,9 +385,14 @@ const App: React.FC = () => {
                 <div className={`w-full aspect-square ${t.bgCard} rounded-[32px] overflow-hidden mb-6 relative border-4 ${t.borderMain} shadow-inner group`}>
                   <ImageWithFallback theme={gender} src={generatedOutfit.illustrationUrl} alt="Avatar Illustration" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" fallbackIcon="👗" />
                   {isGenerating && (
-                    <div className="absolute inset-0 bg-white/90 backdrop-blur-md flex flex-col items-center justify-center">
-                      <div className={`animate-bounce text-6xl mb-4 ${t.textStrong}`}>🎨</div>
-                      <p className="font-bold hand-drawn text-2xl animate-pulse">Sketching your look...</p>
+                    <div className="absolute inset-0 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
+                      <div className={`animate-bounce text-6xl mb-6 ${t.textStrong}`}>🎨</div>
+                      <p className={`font-bold hand-drawn text-2xl ${t.textMain} text-center mb-4 transition-all duration-500`}>
+                        {loadingMessage}
+                      </p>
+                      <div className={`text-sm font-black ${t.textSub} font-mono bg-white px-3 py-1 rounded-full border shadow-sm`}>
+                        {timer}s
+                      </div>
                     </div>
                   )}
                 </div>
