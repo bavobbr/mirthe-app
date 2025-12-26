@@ -20,7 +20,6 @@ interface CategoryPickerModalProps {
 const CATEGORIES: { id: Category; icon: string; label: string }[] = [
     { id: 'Shirt', icon: '👕', label: 'Shirts' },
     { id: 'Sweater', icon: '🧶', label: 'Sweaters' },
-    { id: 'Top', icon: '👚', label: 'Tops' },
     { id: 'Bottom', icon: '👖', label: 'Bottoms' },
     { id: 'Skirt', icon: '👗', label: 'Skirts' },
     { id: 'Dress', icon: '👘', label: 'Dresses' },

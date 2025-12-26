@@ -1,5 +1,5 @@
 
-export type Category = 'Top' | 'Bottom' | 'Shoes' | 'Accessory' | 'Outerwear' | 'Shirt' | 'Sweater' | 'Skirt' | 'Dress' | 'Hat';
+export type Category = 'Shirt' | 'Bottom' | 'Shoes' | 'Accessory' | 'Outerwear' | 'Sweater' | 'Skirt' | 'Dress' | 'Hat';
 
 export interface ClothingItem {
   id: string;

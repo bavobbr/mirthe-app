@@ -80,6 +80,10 @@ const App: React.FC = () => {
   const [showOutfitModal, setShowOutfitModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
 
+  // Filtering state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<Category | 'All'>('All');
+
   // Camera state
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -139,25 +143,35 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const migrateCloset = async () => {
-      const needsMigration = closet.some(item => item.url.startsWith('data:') && item.url.length > 300000);
-      if (!needsMigration) return;
+      let changed = false;
+      const migratedCloset = await Promise.all(closet.map(async (item: any) => {
+        let newItem = { ...item };
 
-      const migratedCloset = await Promise.all(closet.map(async item => {
-        if (item.url.startsWith('data:') && item.url.length > 300000) {
+        // 1. Category migration (Top -> Shirt)
+        if (newItem.category === 'Top') {
+          newItem.category = 'Shirt';
+          changed = true;
+        }
+
+        // 2. Image compression migration (if > 300KB)
+        if (newItem.url.startsWith('data:') && newItem.url.length > 300000) {
           try {
-            const compressed = await downscaleBase64Image(item.url);
-            return { ...item, url: compressed };
+            newItem.url = await downscaleBase64Image(newItem.url);
+            changed = true;
           } catch (e) {
-            return item;
+            console.error("Migration compression failed", e);
           }
         }
-        return item;
+
+        return newItem;
       }));
 
-      setCloset(migratedCloset);
+      if (changed) {
+        setCloset(migratedCloset);
+      }
     };
     migrateCloset();
-  }, []);
+  }, [closet.length]); // Re-run if closet length changes, or just once on mount
 
   useEffect(() => {
     return () => {
@@ -323,6 +337,15 @@ const App: React.FC = () => {
 
   const maxVisibleItems = gridColumns * 2;
 
+  const filteredCloset = closet.filter(item => {
+    const matchesCategory = activeFilter === 'All' || item.category === activeFilter;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = item.description.toLowerCase().includes(searchLower) ||
+      item.color?.toLowerCase().includes(searchLower) ||
+      item.category.toLowerCase().includes(searchLower);
+    return matchesCategory && matchesSearch;
+  });
+
   return (
     <div className="min-h-screen pb-20 max-w-6xl mx-auto px-4 sm:px-6 relative transition-colors duration-500">
       <Header t={t} onOpenAbout={() => setShowAboutModal(true)} />
@@ -338,7 +361,8 @@ const App: React.FC = () => {
           />
 
           <ClosetSection
-            closet={closet}
+            closet={filteredCloset}
+            totalItems={closet.length}
             gender={gender}
             isGeneratingItem={isGeneratingItem}
             isAnalyzing={isAnalyzing}
@@ -351,6 +375,10 @@ const App: React.FC = () => {
             fileInputRef={fileInputRef}
             handleFileUpload={handleFileUpload}
             maxVisibleItems={maxVisibleItems}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            activeFilter={activeFilter}
+            setActiveFilter={setActiveFilter}
             t={t}
           />
 

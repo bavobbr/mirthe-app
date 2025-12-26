@@ -108,7 +108,7 @@ export const analyzeClothing = async (
         {
           parts: [
             { inlineData: { mimeType, data: base64Image } },
-            { text: "Analyze this clothing item. Identify its category (Top, Bottom, Shoes, Accessory, Outerwear, Shirt, Sweater, Skirt, Dress, or Hat), provide a short specific description, and its primary color. Return in JSON format." }
+            { text: "Analyze this clothing item. Identify its category (Bottom, Shoes, Accessory, Outerwear, Shirt, Sweater, Skirt, Dress, or Hat), provide a short specific description, and its primary color. Return in JSON format." }
           ]
         }
       ],
@@ -117,7 +117,7 @@ export const analyzeClothing = async (
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            category: { type: Type.STRING, enum: ['Top', 'Bottom', 'Shoes', 'Accessory', 'Outerwear', 'Shirt', 'Sweater', 'Skirt', 'Dress', 'Hat'] },
+            category: { type: Type.STRING, enum: ['Bottom', 'Shoes', 'Accessory', 'Outerwear', 'Shirt', 'Sweater', 'Skirt', 'Dress', 'Hat'] },
             description: { type: Type.STRING },
             color: { type: Type.STRING }
           },
@@ -147,7 +147,7 @@ export const generateNewClothingItem = async (gender: Gender, category: Category
       Ensure the style, material, and type of the ${category} are traditionally representative and stylistically appropriate for a ${gender === 'girl' ? 'female' : 'male'} wardrobe.
       The item must be functional and fashionable for ${weatherContext}.
       
-      (e.g., if Shoes & Winter: suggest boots; if Top & Summer: suggest a breezy blouse or tee; if Bottom & Rainy: suggest durable trousers).
+      (e.g., if Shoes & Winter: suggest boots; if Shirt & Summer: suggest a breezy tee; if Bottom & Rainy: suggest durable trousers).
       
       Provide a very concise professional fashion description (maximum 15 words) and a specific color. 
       Also provide a detailed visual prompt for an image generator to create this ${category} on a clean white background. 
@@ -220,7 +220,7 @@ export const selectBestOutfit = async (
       
       Instructions:
       1. Assemble a complete outfit that is stylistically appropriate for a ${gender === 'girl' ? 'woman' : 'man'}.
-      2. If 'Dress' is selected, no Top (Shirt, Sweater, Top) or Bottom (Skirt, Bottom). Otherwise, 1 Top (Shirt, Sweater, or Top) and 1 Bottom (Skirt, or Bottom).
+      2. If 'Dress' is selected, no Upper Body (Shirt, Sweater) or Bottom (Skirt, Bottom). Otherwise, 1 Upper Body (Shirt or Sweater) and 1 Bottom (Skirt, or Bottom).
       3. Exactly 1 pair of Shoes.
       4. Avoid IDs: ${previousIds.join(', ')}
       
