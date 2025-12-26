@@ -1,9 +1,19 @@
-
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ClothingItem, Category, WeatherCondition, Gender, GeneratedOutfit, IllustrationStyle } from './types';
 import { analyzeClothing, selectBestOutfit, generateAvatarIllustration, generateNewClothingItem, downscaleBase64Image } from './services/geminiService';
-import { Button } from './components/Button';
-import { ImageWithFallback } from './components/ImageWithFallback';
+import { useTheme } from './hooks/useTheme';
+
+// Layout & Sections
+import { Header } from './components/layout/Header';
+import { SettingsSection } from './components/settings/SettingsSection';
+import { ClosetSection } from './components/closet/ClosetSection';
+import { OutfitSection } from './components/outfit/OutfitSection';
+
+// Modals
+import { CameraModal } from './components/modals/CameraModal';
+import { CategoryPickerModal } from './components/modals/CategoryPickerModal';
+import { ItemDetailModal } from './components/modals/ItemDetailModal';
+import { OutfitDetailModal } from './components/modals/OutfitDetailModal';
 
 const CLOTHES_BASE_URL = `${import.meta.env.BASE_URL}clothes/`;
 
@@ -32,7 +42,6 @@ const DEFAULT_CLOSET: ClothingItem[] = [
 
 const App: React.FC = () => {
   const [closet, setCloset] = useState<ClothingItem[]>(DEFAULT_CLOSET);
-  const [isInitializing, setIsInitializing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingItem, setIsGeneratingItem] = useState(false);
@@ -65,6 +74,8 @@ const App: React.FC = () => {
     "Making it fabulous..."
   ];
 
+  const t = useTheme(gender);
+
   useEffect(() => {
     let interval: any;
     if (isGenerating) {
@@ -91,23 +102,6 @@ const App: React.FC = () => {
   }, [gender]);
 
   useEffect(() => {
-    if (!isCameraOpen || !cameraStream || !videoRef.current) return;
-    videoRef.current.srcObject = cameraStream;
-    const playPromise = videoRef.current.play();
-    if (playPromise?.catch) {
-      playPromise.catch(() => { });
-    }
-  }, [isCameraOpen, cameraStream]);
-
-  useEffect(() => {
-    return () => {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [cameraStream]);
-
-  useEffect(() => {
     const updateColumns = () => {
       const width = window.innerWidth;
       const nextColumns = width >= 1024 ? 5 : width >= 768 ? 4 : width >= 640 ? 3 : 2;
@@ -118,170 +112,89 @@ const App: React.FC = () => {
     return () => window.removeEventListener('resize', updateColumns);
   }, []);
 
-  const t = useMemo(() => {
-    const isGirl = gender === 'girl';
-    return {
-      textMain: isGirl ? 'text-rose-950' : 'text-blue-950',
-      textSub: isGirl ? 'text-rose-800/70' : 'text-blue-800/70',
-      textAccent: isGirl ? 'text-rose-900' : 'text-blue-900',
-      textStrong: isGirl ? 'text-rose-600' : 'text-blue-600',
-      bgMain: isGirl ? 'bg-white' : 'bg-slate-50',
-      bgCard: isGirl ? 'bg-rose-50' : 'bg-blue-50',
-      bgCardAccent: isGirl ? 'bg-pink-50' : 'bg-sky-50',
-      bgBadge: isGirl ? 'bg-pink-100' : 'bg-sky-100',
-      bgBadgeDark: isGirl ? 'bg-rose-100' : 'bg-blue-100',
-      borderMain: isGirl ? 'border-rose-100' : 'border-blue-100',
-      borderAccent: isGirl ? 'border-pink-100' : 'border-sky-100',
-      borderStrong: isGirl ? 'border-rose-500' : 'border-blue-500',
-      iconBg: isGirl ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700',
-      iconBgAlt: isGirl ? 'bg-pink-100 text-pink-700' : 'bg-sky-100 text-sky-700',
-      shadowColor: isGirl ? 'shadow-rose-200' : 'shadow-blue-200',
-      loader: isGirl ? 'border-rose-100 border-t-rose-500' : 'border-blue-100 border-t-blue-500',
-      errorBg: isGirl ? 'bg-rose-100 border-rose-200 text-rose-900' : 'bg-blue-100 border-blue-200 text-blue-900',
-      progressBar: isGirl ? 'bg-rose-500' : 'bg-blue-500',
-      hoverBorder: isGirl ? 'hover:border-pink-300' : 'hover:border-sky-300',
-      btnHover: isGirl ? 'hover:border-pink-200' : 'hover:border-sky-200',
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
     };
-  }, [gender]);
+  }, [cameraStream]);
 
-  const processImage = async (base64Data: string, mimeType: string) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+
     setIsAnalyzing(true);
     setError(null);
     try {
-      const { data: analysisData, mimeType: analysisMimeType } = await downscaleBase64Image(base64Data, mimeType);
-      const analysis = await analyzeClothing(analysisData, analysisMimeType);
-      const newItem: ClothingItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        url: `data:${mimeType};base64,${base64Data}`,
-        ...analysis
-      };
-      setCloset(prev => [newItem, ...prev]);
-    } catch (err: any) {
-      const message = err?.message?.includes('Missing VITE_GEMINI_API_KEY')
-        ? "Missing VITE_GEMINI_API_KEY. Add it to your .env or Vercel settings."
-        : "Failed to analyze the item. Please try again.";
-      setError(message);
+      const newItems: ClothingItem[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        const downscaled = await downscaleBase64Image(base64);
+        const analyzed = await analyzeClothing(downscaled);
+        newItems.push({
+          id: Math.random().toString(36).substr(2, 9),
+          url: base64, // We show the full res version in the UI
+          ...analyzed
+        });
+      }
+      setCloset(prev => [...newItems, ...prev]);
+    } catch (err) {
+      setError("Failed to analyze one or more items. Please try again.");
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleAISurprise = async (category: Category) => {
-    setShowCategoryPicker(false);
-    setIsGeneratingItem(true);
-    setError(null);
-    try {
-      const newItem = await generateNewClothingItem(gender, category, weather);
-      const itemWithId: ClothingItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...newItem
-      };
-      setCloset(prev => [itemWithId, ...prev]);
-    } catch (err: any) {
-      const message = err?.message?.includes('Missing VITE_GEMINI_API_KEY')
-        ? "Missing VITE_GEMINI_API_KEY. Add it to your .env or Vercel settings."
-        : "The AI fashion factory is temporarily closed. Try again in a moment!";
-      setError(message);
-    } finally {
-      setIsGeneratingItem(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const reader = new FileReader();
-      const base64Data = await new Promise<string>((resolve) => {
-        reader.onload = (e) => resolve((e.target?.result as string).split(',')[1]);
-        reader.readAsDataURL(file);
-      });
-      await processImage(base64Data, file.type);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       setCameraStream(stream);
       setIsCameraOpen(true);
     } catch (err) {
-      setError("Could not access camera.");
+      setError("Camera access denied. Please check permissions.");
     }
   };
 
   const stopCamera = () => {
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
     }
+    setCameraStream(null);
     setIsCameraOpen(false);
   };
 
   const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    if (context) {
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg');
-      stopCamera();
-      await processImage(dataUrl.split(',')[1], 'image/jpeg');
-    }
-  };
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
 
-  const handleGenerateOutfit = async (targetStyle: IllustrationStyle = illustrationStyle, forceNewSelection: boolean = false) => {
-    if (closet.length < 3) {
-      setError("Please upload at least a few items to your closet first!");
-      return;
-    }
-    setIsGenerating(true);
+    const base64 = canvas.toDataURL('image/jpeg');
+    stopCamera();
+
+    setIsAnalyzing(true);
     setError(null);
     try {
-      const previousIds = generatedOutfit?.items.map(item => item.id) || [];
-      let selectedItems;
-      let stylistNote;
-
-      // Phase 1: Selection
-      if (forceNewSelection || !generatedOutfit) {
-        const selection = await selectBestOutfit(closet, weather, gender, previousIds);
-        selectedItems = closet.filter(item => selection.selectedIds.includes(item.id));
-        stylistNote = selection.stylistNote;
-        if (selectedItems.length < 2) {
-          const retrySelection = await selectBestOutfit(closet, weather, gender, []);
-          const retryItems = closet.filter(item => retrySelection.selectedIds.includes(item.id));
-          if (retryItems.length < 2) {
-            throw new Error('Outfit selection failed');
-          }
-          selectedItems = retryItems;
-          stylistNote = retrySelection.stylistNote;
-        }
-        // Update state with selection immediately
-        setGeneratedOutfit({ items: selectedItems, stylistNote, illustrationUrl: '', style: targetStyle });
-      } else {
-        selectedItems = generatedOutfit.items;
-        stylistNote = generatedOutfit.stylistNote;
-      }
-
-      // Phase 2: Illustration
-      const illustrationUrl = await generateAvatarIllustration(selectedItems, gender, weather, targetStyle);
-      setGeneratedOutfit(prev => prev ? { ...prev, illustrationUrl, style: targetStyle } : null);
-      setIllustrationStyle(targetStyle);
-    } catch (err: any) {
-      const message = err?.message?.includes('Missing VITE_GEMINI_API_KEY')
-        ? "Missing VITE_GEMINI_API_KEY. Add it to your .env or Vercel settings."
-        : "Styling error. Please try again in a moment.";
-      setError(message);
+      const downscaled = await downscaleBase64Image(base64);
+      const analyzed = await analyzeClothing(downscaled);
+      setCloset(prev => [{
+        id: Math.random().toString(36).substr(2, 9),
+        url: base64,
+        ...analyzed
+      }, ...prev]);
+    } catch (err) {
+      setError("Failed to analyze photo. Please try again.");
     } finally {
-      setIsGenerating(false);
+      setIsAnalyzing(false);
     }
   };
 
@@ -289,323 +202,164 @@ const App: React.FC = () => {
     setCloset(prev => prev.filter(item => item.id !== id));
   };
 
-  const maxVisibleItems = gridColumns * 3;
-  const visibleClosetItems = showAllClosetItems ? closet : closet.slice(0, maxVisibleItems);
+  const handleGenerateOutfit = async (style: IllustrationStyle = illustrationStyle, forceNewSelection = true) => {
+    if (closet.length === 0) {
+      setError("Add some clothes to your closet first!");
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    setIllustrationStyle(style);
+
+    try {
+      let currentOutfit = generatedOutfit;
+
+      if (forceNewSelection || !generatedOutfit) {
+        // Phase 1: Rapid selection (AI picks IDs)
+        const selection = await selectBestOutfit(closet, weather, gender);
+        const selectedItems = (selection?.selectedIds || [])
+          .map(id => closet.find(item => item.id === id))
+          .filter((item): item is ClothingItem => !!item);
+
+        currentOutfit = {
+          items: selectedItems,
+          stylistNote: selection.stylistNote,
+          style: style
+        };
+        setGeneratedOutfit(currentOutfit);
+      } else if (currentOutfit) {
+        // Just updating the style, reuse items
+        currentOutfit = { ...currentOutfit, style: style };
+        setGeneratedOutfit(currentOutfit);
+      }
+
+      if (!currentOutfit) return;
+
+      // Phase 2: High quality illustration
+      const illustrationUrl = await generateAvatarIllustration(currentOutfit.items, gender, weather, style);
+      setGeneratedOutfit({ ...currentOutfit, illustrationUrl });
+    } catch (err) {
+      console.error("Stylist error:", err);
+      setError("Something went wrong with the AI stylist. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleAISurprise = async (category: Category) => {
+    setIsGeneratingItem(true);
+    setError(null);
+    setShowCategoryPicker(false);
+    try {
+      const newItem = await generateNewClothingItem(gender, category, weather);
+      const itemWithId: ClothingItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        ...newItem
+      };
+      setCloset(prev => [itemWithId, ...prev]);
+    } catch (err) {
+      setError("Failed to dream up a new item. Please check your internet.");
+    } finally {
+      setIsGeneratingItem(false);
+    }
+  };
+
+  const maxVisibleItems = gridColumns * 2;
 
   return (
-    <div className={`min-h-screen pb-20 max-w-6xl mx-auto px-4 sm:px-6 relative transition-colors duration-500`}>
-      <header className="py-10 text-center">
-        <h1 className={`text-5xl font-bold ${t.textMain} mb-2 hand-drawn`}>Mirthe's closet app</h1>
-        <p className={`${t.textSub} text-lg font-medium`}>Your personal safe fashion boutique</p>
-      </header>
+    <div className="min-h-screen pb-20 max-w-6xl mx-auto px-4 sm:px-6 relative transition-colors duration-500">
+      <Header t={t} />
 
       <main className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-7 space-y-8">
-          <section className={`${t.bgMain} p-6 rounded-3xl shadow-sm border ${t.borderMain} transition-all duration-300`}>
-            <h2 className={`text-xl font-bold ${t.textMain} mb-4 flex items-center gap-2`}>
-              <span className={`${t.iconBg} p-2 rounded-lg`}>✨</span> Settings
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="flex gap-2">
-                  <Button theme={gender} variant={gender === 'girl' ? 'primary' : 'outline'} onClick={() => setGender('girl')} className="flex-1 text-sm py-2">👧 Girl</Button>
-                  <Button theme={gender} variant={gender === 'boy' ? 'primary' : 'outline'} onClick={() => setGender('boy')} className="flex-1 text-sm py-2">👦 Boy</Button>
-                </div>
-              </div>
-              <div>
-                <select
-                  className={`w-full border-2 ${gender === 'girl' ? 'border-rose-50' : 'border-blue-50'} rounded-full px-4 py-2 text-sm focus:outline-none bg-white ${t.textAccent} font-medium transition-colors`}
-                  value={weather.condition}
-                  onChange={(e) => setWeather({ condition: e.target.value })}
-                >
-                  <option value="Random">🌡️ Any Weather</option>
-                  <option value="Sunny">☀️ Sunny</option>
-                  <option value="Rainy">🌧️ Rainy</option>
-                  <option value="Snowy">❄️ Snowy</option>
-                  <option value="Cloudy">☁️ Cloudy</option>
-                  <option value="Windy">💨 Windy</option>
-                </select>
-              </div>
-            </div>
-          </section>
+          <SettingsSection
+            gender={gender}
+            setGender={setGender}
+            weather={weather}
+            setWeather={setWeather}
+            t={t}
+          />
 
-          <section className={`${t.bgMain} p-6 rounded-3xl shadow-sm border ${t.borderMain} min-h-[400px] transition-all duration-300`}>
-            <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-              <h2 className={`text-xl font-bold ${t.textMain} flex items-center gap-2`}>
-                <span className={`${t.iconBgAlt} p-2 rounded-lg`}>👗</span> My Closet
-                <span className={`text-sm font-normal ${t.textSub} ml-2`}>({closet.length})</span>
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                <Button theme={gender} onClick={() => setShowCategoryPicker(true)} variant="secondary" isLoading={isGeneratingItem} className="text-xs py-2 px-3">✨ Generate</Button>
-                <Button theme={gender} onClick={startCamera} variant="outline" className="text-xs py-2 px-3">📷 Camera</Button>
-                <Button theme={gender} onClick={() => fileInputRef.current?.click()} variant="primary" isLoading={isAnalyzing} className="text-xs py-2 px-3">+ Upload</Button>
-              </div>
-              <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" multiple />
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {isGeneratingItem && (
-                <div className={`aspect-square rounded-2xl border-4 border-dashed animate-pulse flex flex-col items-center justify-center ${t.bgCard} ${t.borderAccent}`}>
-                  <span className="text-2xl mb-1">🧶</span>
-                  <span className="text-[8px] font-black uppercase opacity-50 tracking-widest">Weaving...</span>
-                </div>
-              )}
-              {visibleClosetItems.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedItem(item)}
-                  className={`group relative ${t.bgCardAccent} rounded-2xl overflow-hidden aspect-square border ${t.borderAccent} ${t.hoverBorder} transition-all shadow-sm cursor-pointer active:scale-95`}
-                >
-                  <ImageWithFallback theme={gender} src={item.url} alt={item.description} className="w-full h-full object-contain bg-white" />
-                  <div className={`absolute inset-0 ${gender === 'girl' ? 'bg-rose-950/50' : 'bg-blue-950/50'} opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 backdrop-blur-[2px]`}>
-                    <p className={`text-white text-[10px] uppercase font-black tracking-widest ${gender === 'girl' ? 'bg-rose-600/60' : 'bg-blue-600/60'} px-2 py-0.5 rounded w-fit mb-1`}>{item.category}</p>
-                    <p className="text-white text-[10px] truncate font-medium">{item.description}</p>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeItem(item.id);
-                      }}
-                      className={`absolute top-2 right-2 bg-white/20 hover:bg-red-500 rounded-full p-1.5 transition-colors shadow-lg z-10`}
-                    >
-                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {closet.length > maxVisibleItems && (
-              <div className="flex justify-center mt-6">
-                <Button
-                  theme={gender}
-                  variant="outline"
-                  onClick={() => setShowAllClosetItems(prev => !prev)}
-                  className="text-xs py-2 px-4"
-                >
-                  {showAllClosetItems ? 'Show less' : 'Show more'}
-                </Button>
-              </div>
-            )}
-          </section>
+          <ClosetSection
+            closet={closet}
+            gender={gender}
+            isGeneratingItem={isGeneratingItem}
+            isAnalyzing={isAnalyzing}
+            showAllClosetItems={showAllClosetItems}
+            setShowAllClosetItems={setShowAllClosetItems}
+            setShowCategoryPicker={setShowCategoryPicker}
+            setSelectedItem={setSelectedItem}
+            removeItem={removeItem}
+            startCamera={startCamera}
+            fileInputRef={fileInputRef}
+            handleFileUpload={handleFileUpload}
+            maxVisibleItems={maxVisibleItems}
+            t={t}
+          />
 
           {error && (
             <div className={`${t.errorBg} p-4 rounded-2xl flex items-center gap-3 font-medium animate-pulse border-2`}>
-              <svg className={`w-6 h-6 ${t.textStrong}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <svg className={`w-6 h-6 ${t.textStrong}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {error}
             </div>
           )}
         </div>
 
-        <div className="lg:col-span-5 sticky top-6">
-          <div className={`${t.bgMain} p-8 rounded-[40px] shadow-2xl border ${t.borderMain} flex flex-col items-center text-center transition-all duration-300`}>
-            {generatedOutfit ? (
-              <>
-                <div
-                  className={`w-full aspect-square ${t.bgCard} rounded-[32px] overflow-hidden mb-6 relative border-4 ${t.borderMain} shadow-inner group cursor-pointer active:scale-95 transition-transform`}
-                  onClick={() => !isGenerating && setShowOutfitModal(true)}
-                >
-                  <ImageWithFallback theme={gender} src={generatedOutfit.illustrationUrl} alt="Avatar Illustration" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" fallbackIcon="👗" />
-                  <div className="absolute inset-0 bg-black/5 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <span className="bg-white/90 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest text-slate-900 shadow-lg">View Full Screen</span>
-                  </div>
-                  {isGenerating && (
-                    <div className="absolute inset-0 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
-                      <div className={`animate-bounce text-6xl mb-6 ${t.textStrong}`}>🎨</div>
-                      <p className={`font-bold hand-drawn text-2xl ${t.textMain} text-center mb-4 transition-all duration-500`}>
-                        {loadingMessage}
-                      </p>
-                      <div className={`text-sm font-black ${t.textSub} font-mono bg-white px-3 py-1 rounded-full border shadow-sm`}>
-                        {timer}s
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2 mb-6 w-full justify-center">
-                  {(['hand-drawn', 'realistic', 'cartoon'] as IllustrationStyle[]).map((style) => (
-                    <Button key={style} theme={gender} variant={illustrationStyle === style ? 'secondary' : 'ghost'} onClick={() => handleGenerateOutfit(style, false)} className="flex-1 text-[10px] py-2">
-                      {style === 'hand-drawn' ? 'Sketch' : style === 'realistic' ? 'Studio' : 'Toon'}
-                    </Button>
-                  ))}
-                </div>
-                <div className="space-y-4 w-full">
-                  <h3 className={`text-2xl font-bold ${t.textMain} hand-drawn leading-tight italic`}>"{generatedOutfit.stylistNote}"</h3>
-                  <div className="pt-4 flex flex-wrap justify-center gap-3">
-                    {generatedOutfit.items.map(item => (
-                      <div key={item.id} className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-md">
-                        <ImageWithFallback theme={gender} src={item.url} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                  <Button theme={gender} onClick={() => handleGenerateOutfit(illustrationStyle, true)} isLoading={isGenerating} className="w-full mt-6">🔄 New Combination</Button>
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center py-10 w-full">
-                <div className={`w-full aspect-square ${t.bgCard} rounded-[32px] flex flex-col items-center justify-center mb-10 border-4 border-dashed ${t.borderAccent}`}>
-                  <span className="text-8xl opacity-10">🪄</span>
-                </div>
-                <h3 className={`text-2xl font-bold ${t.textMain} hand-drawn mb-2`}>Ready to shine?</h3>
-                <p className={`${t.textSub} mb-8 max-w-xs font-medium`}>Select preferences and let Mirthe's AI designer sketch your look.</p>
-                <Button theme={gender} onClick={() => handleGenerateOutfit()} isLoading={isGenerating} className="w-full">✨ Suggest Outfit</Button>
-              </div>
-            )}
-          </div>
-        </div>
+        <OutfitSection
+          generatedOutfit={generatedOutfit}
+          gender={gender}
+          isGenerating={isGenerating}
+          illustrationStyle={illustrationStyle}
+          loadingMessage={loadingMessage}
+          timer={timer}
+          handleGenerateOutfit={handleGenerateOutfit}
+          setShowOutfitModal={setShowOutfitModal}
+          t={t}
+        />
       </main>
 
+      {/* Modals */}
       {isCameraOpen && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4">
-          <div className="relative w-full max-w-md aspect-[3/4] bg-gray-900 rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            <canvas ref={canvasRef} className="hidden" />
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center items-center gap-8">
-              <button onClick={stopCamera} className="bg-white/20 p-4 rounded-full text-white"><svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
-              <button onClick={capturePhoto} className="w-20 h-20 bg-white rounded-full border-4 border-gray-300 active:scale-90 transition-transform" />
-            </div>
-          </div>
-        </div>
+        <CameraModal
+          videoRef={videoRef}
+          canvasRef={canvasRef}
+          stopCamera={stopCamera}
+          capturePhoto={capturePhoto}
+        />
       )}
 
       {showCategoryPicker && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all" onClick={() => setShowCategoryPicker(false)}>
-          <div className={`${t.bgMain} w-full max-w-lg rounded-[40px] p-8 sm:p-10 shadow-3xl border ${t.borderMain} animate-in fade-in zoom-in duration-300 transform-gpu`} onClick={e => e.stopPropagation()}>
-            <div className="text-center mb-8">
-              <h3 className={`text-3xl font-bold ${t.textMain} hand-drawn mb-2`}>Dream Designer</h3>
-              <p className={`${t.textSub} text-sm font-medium italic`}>Select a category for your AI-crafted piece</p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-              {([
-                { id: 'Shirt', icon: '👕', label: 'Shirts' },
-                { id: 'Sweater', icon: '🧶', label: 'Sweaters' },
-                { id: 'Top', icon: '👚', label: 'Tops' },
-                { id: 'Bottom', icon: '👖', label: 'Bottoms' },
-                { id: 'Skirt', icon: '👗', label: 'Skirts' },
-                { id: 'Dress', icon: '👘', label: 'Dresses' },
-                { id: 'Outerwear', icon: '🧥', label: 'Outerwear' },
-                { id: 'Shoes', icon: '👟', label: 'Shoes' },
-                { id: 'Hat', icon: '👒', label: 'Hats' },
-                { id: 'Accessory', icon: '👜', label: 'Accessories' },
-              ] as { id: Category; icon: string; label: string }[]).map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleAISurprise(item.id)}
-                  className={`group py-4 px-2 rounded-3xl border-2 font-bold transition-all active:scale-90 ${t.borderAccent} ${t.bgCardAccent} ${t.textAccent} hover:border-rose-400 hover:bg-white hover:shadow-xl flex flex-col items-center gap-2 relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-rose-200`}
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${gender === 'girl' ? 'from-rose-100/10' : 'from-blue-100/10'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
-                  <span className="text-3xl relative z-10 transition-transform group-hover:scale-125 duration-300 transform-gpu">{item.icon}</span>
-                  <span className="text-[9px] uppercase tracking-[0.2em] relative z-10 font-black opacity-80">{item.label}</span>
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowCategoryPicker(false)}
-              className={`w-full mt-8 pt-6 text-xs font-black uppercase tracking-widest ${t.textSub} hover:${t.textStrong} transition-colors border-t ${t.borderAccent}`}
-            >
-              Close Menu
-            </button>
-          </div>
-        </div>
+        <CategoryPickerModal
+          gender={gender}
+          onSelectCategory={handleAISurprise}
+          onClose={() => setShowCategoryPicker(false)}
+          t={t}
+        />
       )}
+
       {selectedItem && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all" onClick={() => setSelectedItem(null)}>
-          <div className={`${t.bgMain} w-full max-w-2xl rounded-[40px] overflow-hidden shadow-3xl border ${t.borderMain} animate-in fade-in zoom-in duration-300 transform-gpu flex flex-col md:flex-row`} onClick={e => e.stopPropagation()}>
-            <div className="w-full md:w-1/2 aspect-square bg-white flex items-center justify-center p-8 border-b md:border-b-0 md:border-r border-rose-50">
-              <ImageWithFallback theme={gender} src={selectedItem.url} alt={selectedItem.description} className="max-w-full max-h-full object-contain" />
-            </div>
-            <div className="w-full md:w-1/2 p-8 sm:p-10 flex flex-col justify-between">
-              <div>
-                <span className={`${t.bgBadge} ${t.textStrong} text-[10px] uppercase font-black tracking-[0.2em] px-3 py-1 rounded-full mb-4 inline-block`}>
-                  {selectedItem.category}
-                </span>
-                <h3 className={`text-3xl font-bold ${t.textMain} hand-drawn mb-6 leading-tight`}>Item Details</h3>
-                <p className={`${t.textAccent} text-lg font-medium leading-relaxed italic`}>
-                  "{selectedItem.description}"
-                </p>
-                {selectedItem.color && (
-                  <div className="mt-6 flex items-center gap-3">
-                    <div className="w-4 h-4 rounded-full border border-black/10" style={{ backgroundColor: selectedItem.color.toLowerCase() }} />
-                    <span className={`${t.textSub} text-sm font-bold uppercase tracking-widest`}>{selectedItem.color}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className={`mt-10 pt-6 border-t ${t.borderAccent} flex flex-col gap-2`}>
-                <button
-                  onClick={() => {
-                    removeItem(selectedItem.id);
-                    setSelectedItem(null);
-                  }}
-                  className="w-full py-4 text-xs font-black uppercase tracking-widest text-red-500 hover:text-red-700 transition-colors"
-                >
-                  Remove from Closet
-                </button>
-                <button
-                  onClick={() => setSelectedItem(null)}
-                  className={`w-full py-4 text-xs font-black uppercase tracking-widest ${t.textStrong} hover:opacity-70 transition-opacity`}
-                >
-                  Back to Closet
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ItemDetailModal
+          item={selectedItem}
+          gender={gender}
+          onClose={() => setSelectedItem(null)}
+          onRemove={removeItem}
+          t={t}
+        />
       )}
-      {showOutfitModal && generatedOutfit && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[60] flex items-center justify-center p-4 transition-all" onClick={() => setShowOutfitModal(false)}>
-          <div className="w-full max-w-3xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
-            <div className={`w-full aspect-square rounded-[40px] overflow-hidden border-4 border-white shadow-2xl relative bg-white`}>
-              <img src={generatedOutfit.illustrationUrl} alt="Full scale outfit" className="w-full h-full object-contain" />
-              {isGenerating && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-rose-500 border-t-transparent" />
-                </div>
-              )}
-            </div>
 
-            <div className="flex flex-wrap gap-4 justify-center w-full">
-              <Button
-                theme={gender}
-                variant="primary"
-                onClick={async () => {
-                  try {
-                    const response = await fetch(generatedOutfit.illustrationUrl);
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `mirthe-outfit-${Date.now()}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                  } catch (e) {
-                    setError("Failed to download image.");
-                  }
-                }}
-                className="px-8"
-              >
-                📥 Download
-              </Button>
-              <Button
-                theme={gender}
-                variant="secondary"
-                onClick={() => handleGenerateOutfit(illustrationStyle, false)}
-                isLoading={isGenerating}
-                className="px-8"
-              >
-                🔄 Rerender
-              </Button>
-              <Button
-                theme={gender}
-                variant="outline"
-                onClick={() => setShowOutfitModal(false)}
-                className="px-8 bg-white/10 text-white border-white/20 hover:bg-white/20"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
+      {showOutfitModal && generatedOutfit && (
+        <OutfitDetailModal
+          generatedOutfit={generatedOutfit}
+          gender={gender}
+          isGenerating={isGenerating}
+          illustrationStyle={illustrationStyle}
+          onClose={() => setShowOutfitModal(false)}
+          onRerender={handleGenerateOutfit}
+          setError={setError}
+        />
       )}
     </div>
   );
