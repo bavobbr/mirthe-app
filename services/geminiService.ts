@@ -38,23 +38,24 @@ const urlToBase64 = async (url: string): Promise<{ data: string, mimeType: strin
   }
 };
 
+/**
+ * Resizes and compresses an image to fit within localStorage limits (~50-100KB)
+ */
 export const downscaleBase64Image = async (
-  base64Data: string,
-  mimeType: string,
+  base64DataUrl: string,
   maxDimension = 640,
-  quality = 0.75
-): Promise<{ data: string, mimeType: string }> => {
-  const dataUrl = `data:${mimeType};base64,${base64Data}`;
+  quality = 0.7
+): Promise<string> => {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error('Failed to load image for resize'));
-    image.src = dataUrl;
+    image.src = base64DataUrl;
   });
 
   const maxSide = Math.max(img.width, img.height);
   if (maxSide <= maxDimension) {
-    return { data: base64Data, mimeType };
+    return base64DataUrl;
   }
 
   const scale = maxDimension / maxSide;
@@ -64,20 +65,19 @@ export const downscaleBase64Image = async (
   canvas.width = targetWidth;
   canvas.height = targetHeight;
   const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    return { data: base64Data, mimeType };
-  }
-  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-  const outputMimeType = 'image/jpeg';
-  const resizedDataUrl = canvas.toDataURL(outputMimeType, quality);
-  const resizedData = resizedDataUrl.split(',')[1] || base64Data;
-  return { data: resizedData, mimeType: outputMimeType };
+  if (!ctx) return base64DataUrl;
+
+  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+  return canvas.toDataURL('image/jpeg', quality);
 };
 
 const prepareInlineImage = async (url: string): Promise<{ data: string, mimeType: string }> => {
   const { data, mimeType } = await urlToBase64(url);
-  return downscaleBase64Image(data, mimeType);
+  // For AI analysis, we still want the raw base64 part
+  const downscaledUrl = await downscaleBase64Image(`data:${mimeType};base64,${data}`);
+  const resultData = downscaledUrl.split(',')[1];
+  return { data: resultData, mimeType: 'image/jpeg' };
 };
 
 /**

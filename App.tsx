@@ -41,7 +41,28 @@ const DEFAULT_CLOSET: ClothingItem[] = [
 ];
 
 const App: React.FC = () => {
-  const [closet, setCloset] = useState<ClothingItem[]>(DEFAULT_CLOSET);
+  const [closet, setCloset] = useState<ClothingItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mirthe_closet');
+      return saved ? JSON.parse(saved) : DEFAULT_CLOSET;
+    } catch (e) {
+      console.error("Failed to load closet from localStorage:", e);
+      return DEFAULT_CLOSET;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mirthe_closet', JSON.stringify(closet));
+    } catch (e: any) {
+      // Handle the QuotaExceededError when localStorage is full (usually 5MB)
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        setError("Your closet is full! Please remove some items to make room for new ones.");
+      } else {
+        console.error("Failed to save closet to localStorage:", e);
+      }
+    }
+  }, [closet]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingItem, setIsGeneratingItem] = useState(false);
@@ -113,6 +134,28 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const migrateCloset = async () => {
+      const needsMigration = closet.some(item => item.url.startsWith('data:') && item.url.length > 300000);
+      if (!needsMigration) return;
+
+      const migratedCloset = await Promise.all(closet.map(async item => {
+        if (item.url.startsWith('data:') && item.url.length > 300000) {
+          try {
+            const compressed = await downscaleBase64Image(item.url);
+            return { ...item, url: compressed };
+          } catch (e) {
+            return item;
+          }
+        }
+        return item;
+      }));
+
+      setCloset(migratedCloset);
+    };
+    migrateCloset();
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
@@ -136,11 +179,14 @@ const App: React.FC = () => {
           reader.readAsDataURL(file);
         });
 
-        const downscaled = await downscaleBase64Image(base64);
-        const analyzed = await analyzeClothing(downscaled);
+        const downscaledUrl = await downscaleBase64Image(base64);
+        const [header, data] = downscaledUrl.split(',');
+        const mimeType = header.split(':')[1].split(';')[0];
+
+        const analyzed = await analyzeClothing(data, mimeType);
         newItems.push({
           id: Math.random().toString(36).substr(2, 9),
-          url: base64, // We show the full res version in the UI
+          url: downscaledUrl,
           ...analyzed
         });
       }
@@ -184,11 +230,14 @@ const App: React.FC = () => {
     setIsAnalyzing(true);
     setError(null);
     try {
-      const downscaled = await downscaleBase64Image(base64);
-      const analyzed = await analyzeClothing(downscaled);
+      const downscaledUrl = await downscaleBase64Image(base64);
+      const [header, data] = downscaledUrl.split(',');
+      const mimeType = header.split(':')[1].split(';')[0];
+
+      const analyzed = await analyzeClothing(data, mimeType);
       setCloset(prev => [{
         id: Math.random().toString(36).substr(2, 9),
-        url: base64,
+        url: downscaledUrl,
         ...analyzed
       }, ...prev]);
     } catch (err) {
@@ -253,9 +302,12 @@ const App: React.FC = () => {
     setShowCategoryPicker(false);
     try {
       const newItem = await generateNewClothingItem(gender, category, weather);
+      const compressedUrl = await downscaleBase64Image(newItem.url);
+
       const itemWithId: ClothingItem = {
         id: Math.random().toString(36).substr(2, 9),
-        ...newItem
+        ...newItem,
+        url: compressedUrl
       };
       setCloset(prev => [itemWithId, ...prev]);
     } catch (err) {
