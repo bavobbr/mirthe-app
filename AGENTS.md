@@ -1,7 +1,7 @@
-# AGENTS.md - Mirthe's Closet App
+# AGENTS.md - Dressed by Mirthe
 
 ## Overview
-Mirthe's Closet App is a modular React + TypeScript application. It uses Google Gemini AI to transform personal wardrobes into a creative, weather-aware styling experience. Users can manage their closet, capture new items via camera, and generate full outfit illustrations in multiple artistic styles.
+Dressed by Mirthe is a modular React + TypeScript application. It uses Google Gemini AI to transform personal wardrobes into a creative, weather-aware styling experience. Users can manage their closet, capture new items via camera, and generate full outfit illustrations in multiple artistic styles.
 
 Core flows:
 - **Closet Management**: Users interact with a grid of items, view details, and remove garments.

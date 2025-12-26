@@ -10,8 +10,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ t }) => {
     return (
         <header className="py-10 text-center">
-            <h1 className={`text-5xl font-bold ${t.textMain} mb-2 hand-drawn`}>Mirthe's closet app</h1>
-            <p className={`${t.textSub} text-lg font-medium`}>Your personal safe fashion boutique</p>
+            <h1 className={`text-5xl font-bold ${t.textMain} mb-2 hand-drawn`}>Dressed by Mirthe</h1>
+            <p className={`${t.textSub} text-lg font-medium`}>Your closet. Smarter outfits</p>
         </header>
     );
 };
