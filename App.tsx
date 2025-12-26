@@ -14,6 +14,7 @@ import { CameraModal } from './components/modals/CameraModal';
 import { CategoryPickerModal } from './components/modals/CategoryPickerModal';
 import { ItemDetailModal } from './components/modals/ItemDetailModal';
 import { OutfitDetailModal } from './components/modals/OutfitDetailModal';
+import { AboutModal } from './components/modals/AboutModal';
 
 const CLOTHES_BASE_URL = `${import.meta.env.BASE_URL}clothes/`;
 
@@ -77,6 +78,7 @@ const App: React.FC = () => {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
   const [showOutfitModal, setShowOutfitModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   // Camera state
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -321,7 +323,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20 max-w-6xl mx-auto px-4 sm:px-6 relative transition-colors duration-500">
-      <Header t={t} />
+      <Header t={t} onOpenAbout={() => setShowAboutModal(true)} />
 
       <main className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-7 space-y-8">
@@ -411,6 +413,13 @@ const App: React.FC = () => {
           onClose={() => setShowOutfitModal(false)}
           onRerender={handleGenerateOutfit}
           setError={setError}
+        />
+      )}
+      {showAboutModal && (
+        <AboutModal
+          gender={gender}
+          t={t}
+          onClose={() => setShowAboutModal(false)}
         />
       )}
     </div>
