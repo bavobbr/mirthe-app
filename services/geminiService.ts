@@ -4,6 +4,13 @@ import { ClothingItem, Category, WeatherCondition, Gender, IllustrationStyle } f
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.API_KEY;
 
+const getApiKey = () => {
+  if (!GEMINI_API_KEY) {
+    throw new Error('Missing VITE_GEMINI_API_KEY');
+  }
+  return GEMINI_API_KEY;
+};
+
 /**
  * Utility to fetch an image and convert it to base64
  */
@@ -31,7 +38,7 @@ const urlToBase64 = async (url: string): Promise<{ data: string, mimeType: strin
   }
 };
 
-const downscaleBase64Image = async (
+export const downscaleBase64Image = async (
   base64Data: string,
   mimeType: string,
   maxDimension = 640,
@@ -89,15 +96,18 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Pr
   }
 };
 
-export const analyzeClothing = async (base64Image: string): Promise<{ category: Category; description: string; color: string }> => {
+export const analyzeClothing = async (
+  base64Image: string,
+  mimeType: string
+): Promise<{ category: Category; description: string; color: string }> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [
         {
           parts: [
-            { inlineData: { mimeType: 'image/jpeg', data: base64Image } },
+            { inlineData: { mimeType, data: base64Image } },
             { text: "Analyze this clothing item. Identify its category (Top, Bottom, Shoes, Accessory, Outerwear, Shirt, Sweater, Skirt, or Dress), provide a short specific description, and its primary color. Return in JSON format." }
           ]
         }
@@ -124,7 +134,7 @@ export const analyzeClothing = async (base64Image: string): Promise<{ category: 
  */
 export const generateNewClothingItem = async (gender: Gender): Promise<Omit<ClothingItem, 'id'>> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     
     // Step 1: Brainstorm the item details
     const ideaResponse = await ai.models.generateContent({
@@ -186,7 +196,7 @@ export const selectBestOutfit = async (
   previousIds: string[] = []
 ): Promise<{ selectedIds: string[]; stylistNote: string }> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const shuffledCloset = [...closet].sort(() => Math.random() - 0.5);
     const closetPrompt = shuffledCloset.map(item => `ID: ${item.id}, Cat: ${item.category}, Desc: ${item.description}, Color: ${item.color}`).join('\n');
     
@@ -232,7 +242,7 @@ export const generateAvatarIllustration = async (
   style: IllustrationStyle
 ): Promise<string> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
     const itemParts = await Promise.all(
       selectedItems.map(async (item) => {
         try {

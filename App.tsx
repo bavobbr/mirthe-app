@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ClothingItem, Category, WeatherCondition, Gender, GeneratedOutfit, IllustrationStyle } from './types';
-import { analyzeClothing, selectBestOutfit, generateAvatarIllustration, generateNewClothingItem } from './services/geminiService';
+import { analyzeClothing, selectBestOutfit, generateAvatarIllustration, generateNewClothingItem, downscaleBase64Image } from './services/geminiService';
 import { Button } from './components/Button';
 import { ImageWithFallback } from './components/ImageWithFallback';
 
@@ -67,6 +67,14 @@ const App: React.FC = () => {
   }, [isCameraOpen, cameraStream]);
 
   useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
+  useEffect(() => {
     const updateColumns = () => {
       const width = window.innerWidth;
       const nextColumns = width >= 1024 ? 5 : width >= 768 ? 4 : width >= 640 ? 3 : 2;
@@ -107,7 +115,8 @@ const App: React.FC = () => {
     setIsAnalyzing(true);
     setError(null);
     try {
-      const analysis = await analyzeClothing(base64Data);
+      const { data: analysisData, mimeType: analysisMimeType } = await downscaleBase64Image(base64Data, mimeType);
+      const analysis = await analyzeClothing(analysisData, analysisMimeType);
       const newItem: ClothingItem = {
         id: Math.random().toString(36).substr(2, 9),
         url: `data:${mimeType};base64,${base64Data}`,
@@ -115,7 +124,10 @@ const App: React.FC = () => {
       };
       setCloset(prev => [newItem, ...prev]);
     } catch (err: any) {
-      setError("Failed to analyze the item. Please try again.");
+      const message = err?.message?.includes('Missing VITE_GEMINI_API_KEY')
+        ? "Missing VITE_GEMINI_API_KEY. Add it to your .env or Vercel settings."
+        : "Failed to analyze the item. Please try again.";
+      setError(message);
     } finally {
       setIsAnalyzing(false);
     }
@@ -132,7 +144,10 @@ const App: React.FC = () => {
       };
       setCloset(prev => [itemWithId, ...prev]);
     } catch (err: any) {
-      setError("The AI fashion factory is temporarily closed. Try again in a moment!");
+      const message = err?.message?.includes('Missing VITE_GEMINI_API_KEY')
+        ? "Missing VITE_GEMINI_API_KEY. Add it to your .env or Vercel settings."
+        : "The AI fashion factory is temporarily closed. Try again in a moment!";
+      setError(message);
     } finally {
       setIsGeneratingItem(false);
     }
@@ -204,6 +219,15 @@ const App: React.FC = () => {
         const selection = await selectBestOutfit(closet, weather, gender, previousIds);
         selectedItems = closet.filter(item => selection.selectedIds.includes(item.id));
         stylistNote = selection.stylistNote;
+        if (selectedItems.length < 2) {
+          const retrySelection = await selectBestOutfit(closet, weather, gender, []);
+          const retryItems = closet.filter(item => retrySelection.selectedIds.includes(item.id));
+          if (retryItems.length < 2) {
+            throw new Error('Outfit selection failed');
+          }
+          selectedItems = retryItems;
+          stylistNote = retrySelection.stylistNote;
+        }
       } else {
         selectedItems = generatedOutfit.items;
         stylistNote = generatedOutfit.stylistNote;
@@ -212,7 +236,10 @@ const App: React.FC = () => {
       setGeneratedOutfit({ items: selectedItems, stylistNote, illustrationUrl, style: targetStyle });
       setIllustrationStyle(targetStyle);
     } catch (err: any) {
-      setError("Styling error. Ensure your image files are named correctly in the /clothes folder.");
+      const message = err?.message?.includes('Missing VITE_GEMINI_API_KEY')
+        ? "Missing VITE_GEMINI_API_KEY. Add it to your .env or Vercel settings."
+        : "Styling error. Please try again in a moment.";
+      setError(message);
     } finally {
       setIsGenerating(false);
     }

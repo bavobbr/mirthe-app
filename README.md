@@ -6,6 +6,8 @@
 
 An AI-powered closet and outfit generator. Upload items (or use the default closet), choose a weather condition and style, and generate a full outfit plus an AI illustration.
 
+Designed by Mirthe Bruylandt. Developed by Bavo Bruylandt.
+
 ## What It Does
 
 - Shows a curated closet of clothing items with categories, colors, and descriptions.
@@ -16,9 +18,10 @@ An AI-powered closet and outfit generator. Upload items (or use the default clos
 ## How It Is Built
 
 - Frontend: React + TypeScript + Vite.
-- AI: Gemini for clothing analysis, outfit selection, and illustration generation.
-- Styling: Tailwind utility classes in JSX.
+- AI: Google Gemini for clothing analysis, outfit selection, and illustration generation.
+- Styling: Tailwind utility classes in JSX (loaded via CDN).
 - Analytics: Vercel Analytics for usage insights.
+- Hosting: Vercel (GitHub-connected deployments).
 
 ## Architecture
 
@@ -43,3 +46,10 @@ An AI-powered closet and outfit generator. Upload items (or use the default clos
 
 - `npm run build`
 - `npm run preview`
+
+## Deploy to Vercel
+
+1. Import the GitHub repo into Vercel and select the Vite preset.
+2. Set the build command to `npm run build` and the output directory to `dist`.
+3. Add the environment variable `VITE_GEMINI_API_KEY` in Vercel Project Settings.
+4. Push to the default branch to trigger production deploys; PRs create preview deployments.
