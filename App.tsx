@@ -38,12 +38,15 @@ const App: React.FC = () => {
   const [isGeneratingItem, setIsGeneratingItem] = useState(false);
 
   const [gender, setGender] = useState<Gender>('girl');
-  const [weather, setWeather] = useState<WeatherCondition>({ condition: 'Sunny' });
+  const [weather, setWeather] = useState<WeatherCondition>({ condition: 'Random' });
   const [illustrationStyle, setIllustrationStyle] = useState<IllustrationStyle>('hand-drawn');
   const [generatedOutfit, setGeneratedOutfit] = useState<GeneratedOutfit | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAllClosetItems, setShowAllClosetItems] = useState(false);
   const [gridColumns, setGridColumns] = useState(2);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ClothingItem | null>(null);
+  const [showOutfitModal, setShowOutfitModal] = useState(false);
 
   // Camera state
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -163,11 +166,12 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAISurprise = async () => {
+  const handleAISurprise = async (category: Category) => {
+    setShowCategoryPicker(false);
     setIsGeneratingItem(true);
     setError(null);
     try {
-      const newItem = await generateNewClothingItem(gender);
+      const newItem = await generateNewClothingItem(gender, category, weather);
       const itemWithId: ClothingItem = {
         id: Math.random().toString(36).substr(2, 9),
         ...newItem
@@ -303,20 +307,23 @@ const App: React.FC = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className={`block text-sm font-bold ${t.textAccent} mb-2`}>I am a...</label>
                 <div className="flex gap-2">
                   <Button theme={gender} variant={gender === 'girl' ? 'primary' : 'outline'} onClick={() => setGender('girl')} className="flex-1 text-sm py-2">👧 Girl</Button>
                   <Button theme={gender} variant={gender === 'boy' ? 'primary' : 'outline'} onClick={() => setGender('boy')} className="flex-1 text-sm py-2">👦 Boy</Button>
                 </div>
               </div>
               <div>
-                <label className={`block text-sm font-bold ${t.textAccent} mb-2`}>Weather Condition</label>
                 <select
                   className={`w-full border-2 ${gender === 'girl' ? 'border-rose-50' : 'border-blue-50'} rounded-full px-4 py-2 text-sm focus:outline-none bg-white ${t.textAccent} font-medium transition-colors`}
                   value={weather.condition}
                   onChange={(e) => setWeather({ condition: e.target.value })}
                 >
-                  <option>Sunny</option><option>Rainy</option><option>Snowy</option><option>Cloudy</option><option>Windy</option>
+                  <option value="Random">🌡️ Any Weather</option>
+                  <option value="Sunny">☀️ Sunny</option>
+                  <option value="Rainy">🌧️ Rainy</option>
+                  <option value="Snowy">❄️ Snowy</option>
+                  <option value="Cloudy">☁️ Cloudy</option>
+                  <option value="Windy">💨 Windy</option>
                 </select>
               </div>
             </div>
@@ -329,7 +336,7 @@ const App: React.FC = () => {
                 <span className={`text-sm font-normal ${t.textSub} ml-2`}>({closet.length})</span>
               </h2>
               <div className="flex flex-wrap gap-2">
-                <Button theme={gender} onClick={handleAISurprise} variant="secondary" isLoading={isGeneratingItem} className="text-xs py-2 px-3">✨ AI Surprise</Button>
+                <Button theme={gender} onClick={() => setShowCategoryPicker(true)} variant="secondary" isLoading={isGeneratingItem} className="text-xs py-2 px-3">✨ Generate</Button>
                 <Button theme={gender} onClick={startCamera} variant="outline" className="text-xs py-2 px-3">📷 Camera</Button>
                 <Button theme={gender} onClick={() => fileInputRef.current?.click()} variant="primary" isLoading={isAnalyzing} className="text-xs py-2 px-3">+ Upload</Button>
               </div>
@@ -344,12 +351,22 @@ const App: React.FC = () => {
                 </div>
               )}
               {visibleClosetItems.map((item) => (
-                <div key={item.id} className={`group relative ${t.bgCardAccent} rounded-2xl overflow-hidden aspect-square border ${t.borderAccent} ${t.hoverBorder} transition-all shadow-sm`}>
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedItem(item)}
+                  className={`group relative ${t.bgCardAccent} rounded-2xl overflow-hidden aspect-square border ${t.borderAccent} ${t.hoverBorder} transition-all shadow-sm cursor-pointer active:scale-95`}
+                >
                   <ImageWithFallback theme={gender} src={item.url} alt={item.description} className="w-full h-full object-contain bg-white" />
                   <div className={`absolute inset-0 ${gender === 'girl' ? 'bg-rose-950/50' : 'bg-blue-950/50'} opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 backdrop-blur-[2px]`}>
                     <p className={`text-white text-[10px] uppercase font-black tracking-widest ${gender === 'girl' ? 'bg-rose-600/60' : 'bg-blue-600/60'} px-2 py-0.5 rounded w-fit mb-1`}>{item.category}</p>
                     <p className="text-white text-[10px] truncate font-medium">{item.description}</p>
-                    <button onClick={() => removeItem(item.id)} className={`absolute top-2 right-2 bg-white/20 hover:bg-red-500 rounded-full p-1.5 transition-colors shadow-lg z-10`}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeItem(item.id);
+                      }}
+                      className={`absolute top-2 right-2 bg-white/20 hover:bg-red-500 rounded-full p-1.5 transition-colors shadow-lg z-10`}
+                    >
                       <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
@@ -382,8 +399,14 @@ const App: React.FC = () => {
           <div className={`${t.bgMain} p-8 rounded-[40px] shadow-2xl border ${t.borderMain} flex flex-col items-center text-center transition-all duration-300`}>
             {generatedOutfit ? (
               <>
-                <div className={`w-full aspect-square ${t.bgCard} rounded-[32px] overflow-hidden mb-6 relative border-4 ${t.borderMain} shadow-inner group`}>
+                <div
+                  className={`w-full aspect-square ${t.bgCard} rounded-[32px] overflow-hidden mb-6 relative border-4 ${t.borderMain} shadow-inner group cursor-pointer active:scale-95 transition-transform`}
+                  onClick={() => !isGenerating && setShowOutfitModal(true)}
+                >
                   <ImageWithFallback theme={gender} src={generatedOutfit.illustrationUrl} alt="Avatar Illustration" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" fallbackIcon="👗" />
+                  <div className="absolute inset-0 bg-black/5 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <span className="bg-white/90 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest text-slate-900 shadow-lg">View Full Screen</span>
+                  </div>
                   {isGenerating && (
                     <div className="absolute inset-0 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
                       <div className={`animate-bounce text-6xl mb-6 ${t.textStrong}`}>🎨</div>
@@ -422,7 +445,7 @@ const App: React.FC = () => {
                 </div>
                 <h3 className={`text-2xl font-bold ${t.textMain} hand-drawn mb-2`}>Ready to shine?</h3>
                 <p className={`${t.textSub} mb-8 max-w-xs font-medium`}>Select preferences and let Mirthe's AI designer sketch your look.</p>
-                <Button theme={gender} onClick={() => handleGenerateOutfit()} isLoading={isGenerating} className="w-full">✨ Generate Outfit</Button>
+                <Button theme={gender} onClick={() => handleGenerateOutfit()} isLoading={isGenerating} className="w-full">✨ Suggest Outfit</Button>
               </div>
             )}
           </div>
@@ -437,6 +460,149 @@ const App: React.FC = () => {
             <div className="absolute bottom-8 left-0 right-0 flex justify-center items-center gap-8">
               <button onClick={stopCamera} className="bg-white/20 p-4 rounded-full text-white"><svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
               <button onClick={capturePhoto} className="w-20 h-20 bg-white rounded-full border-4 border-gray-300 active:scale-90 transition-transform" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCategoryPicker && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all" onClick={() => setShowCategoryPicker(false)}>
+          <div className={`${t.bgMain} w-full max-w-lg rounded-[40px] p-8 sm:p-10 shadow-3xl border ${t.borderMain} animate-in fade-in zoom-in duration-300 transform-gpu`} onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-8">
+              <h3 className={`text-3xl font-bold ${t.textMain} hand-drawn mb-2`}>Dream Designer</h3>
+              <p className={`${t.textSub} text-sm font-medium italic`}>Select a category for your AI-crafted piece</p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+              {([
+                { id: 'Shirt', icon: '👕', label: 'Shirts' },
+                { id: 'Sweater', icon: '🧶', label: 'Sweaters' },
+                { id: 'Top', icon: '👚', label: 'Tops' },
+                { id: 'Bottom', icon: '👖', label: 'Bottoms' },
+                { id: 'Skirt', icon: '👗', label: 'Skirts' },
+                { id: 'Dress', icon: '👘', label: 'Dresses' },
+                { id: 'Outerwear', icon: '🧥', label: 'Outerwear' },
+                { id: 'Shoes', icon: '👟', label: 'Shoes' },
+                { id: 'Hat', icon: '👒', label: 'Hats' },
+                { id: 'Accessory', icon: '👜', label: 'Accessories' },
+              ] as { id: Category; icon: string; label: string }[]).map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleAISurprise(item.id)}
+                  className={`group py-4 px-2 rounded-3xl border-2 font-bold transition-all active:scale-90 ${t.borderAccent} ${t.bgCardAccent} ${t.textAccent} hover:border-rose-400 hover:bg-white hover:shadow-xl flex flex-col items-center gap-2 relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-rose-200`}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${gender === 'girl' ? 'from-rose-100/10' : 'from-blue-100/10'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none`} />
+                  <span className="text-3xl relative z-10 transition-transform group-hover:scale-125 duration-300 transform-gpu">{item.icon}</span>
+                  <span className="text-[9px] uppercase tracking-[0.2em] relative z-10 font-black opacity-80">{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowCategoryPicker(false)}
+              className={`w-full mt-8 pt-6 text-xs font-black uppercase tracking-widest ${t.textSub} hover:${t.textStrong} transition-colors border-t ${t.borderAccent}`}
+            >
+              Close Menu
+            </button>
+          </div>
+        </div>
+      )}
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all" onClick={() => setSelectedItem(null)}>
+          <div className={`${t.bgMain} w-full max-w-2xl rounded-[40px] overflow-hidden shadow-3xl border ${t.borderMain} animate-in fade-in zoom-in duration-300 transform-gpu flex flex-col md:flex-row`} onClick={e => e.stopPropagation()}>
+            <div className="w-full md:w-1/2 aspect-square bg-white flex items-center justify-center p-8 border-b md:border-b-0 md:border-r border-rose-50">
+              <ImageWithFallback theme={gender} src={selectedItem.url} alt={selectedItem.description} className="max-w-full max-h-full object-contain" />
+            </div>
+            <div className="w-full md:w-1/2 p-8 sm:p-10 flex flex-col justify-between">
+              <div>
+                <span className={`${t.bgBadge} ${t.textStrong} text-[10px] uppercase font-black tracking-[0.2em] px-3 py-1 rounded-full mb-4 inline-block`}>
+                  {selectedItem.category}
+                </span>
+                <h3 className={`text-3xl font-bold ${t.textMain} hand-drawn mb-6 leading-tight`}>Item Details</h3>
+                <p className={`${t.textAccent} text-lg font-medium leading-relaxed italic`}>
+                  "{selectedItem.description}"
+                </p>
+                {selectedItem.color && (
+                  <div className="mt-6 flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full border border-black/10" style={{ backgroundColor: selectedItem.color.toLowerCase() }} />
+                    <span className={`${t.textSub} text-sm font-bold uppercase tracking-widest`}>{selectedItem.color}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className={`mt-10 pt-6 border-t ${t.borderAccent} flex flex-col gap-2`}>
+                <button
+                  onClick={() => {
+                    removeItem(selectedItem.id);
+                    setSelectedItem(null);
+                  }}
+                  className="w-full py-4 text-xs font-black uppercase tracking-widest text-red-500 hover:text-red-700 transition-colors"
+                >
+                  Remove from Closet
+                </button>
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className={`w-full py-4 text-xs font-black uppercase tracking-widest ${t.textStrong} hover:opacity-70 transition-opacity`}
+                >
+                  Back to Closet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showOutfitModal && generatedOutfit && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[60] flex items-center justify-center p-4 transition-all" onClick={() => setShowOutfitModal(false)}>
+          <div className="w-full max-w-3xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
+            <div className={`w-full aspect-square rounded-[40px] overflow-hidden border-4 border-white shadow-2xl relative bg-white`}>
+              <img src={generatedOutfit.illustrationUrl} alt="Full scale outfit" className="w-full h-full object-contain" />
+              {isGenerating && (
+                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-rose-500 border-t-transparent" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-4 justify-center w-full">
+              <Button
+                theme={gender}
+                variant="primary"
+                onClick={async () => {
+                  try {
+                    const response = await fetch(generatedOutfit.illustrationUrl);
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `mirthe-outfit-${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  } catch (e) {
+                    setError("Failed to download image.");
+                  }
+                }}
+                className="px-8"
+              >
+                📥 Download
+              </Button>
+              <Button
+                theme={gender}
+                variant="secondary"
+                onClick={() => handleGenerateOutfit(illustrationStyle, false)}
+                isLoading={isGenerating}
+                className="px-8"
+              >
+                🔄 Rerender
+              </Button>
+              <Button
+                theme={gender}
+                variant="outline"
+                onClick={() => setShowOutfitModal(false)}
+                className="px-8 bg-white/10 text-white border-white/20 hover:bg-white/20"
+              >
+                Close
+              </Button>
             </div>
           </div>
         </div>

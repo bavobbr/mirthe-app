@@ -108,7 +108,7 @@ export const analyzeClothing = async (
         {
           parts: [
             { inlineData: { mimeType, data: base64Image } },
-            { text: "Analyze this clothing item. Identify its category (Top, Bottom, Shoes, Accessory, Outerwear, Shirt, Sweater, Skirt, or Dress), provide a short specific description, and its primary color. Return in JSON format." }
+            { text: "Analyze this clothing item. Identify its category (Top, Bottom, Shoes, Accessory, Outerwear, Shirt, Sweater, Skirt, Dress, or Hat), provide a short specific description, and its primary color. Return in JSON format." }
           ]
         }
       ],
@@ -117,7 +117,7 @@ export const analyzeClothing = async (
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            category: { type: Type.STRING, enum: ['Top', 'Bottom', 'Shoes', 'Accessory', 'Outerwear', 'Shirt', 'Sweater', 'Skirt', 'Dress'] },
+            category: { type: Type.STRING, enum: ['Top', 'Bottom', 'Shoes', 'Accessory', 'Outerwear', 'Shirt', 'Sweater', 'Skirt', 'Dress', 'Hat'] },
             description: { type: Type.STRING },
             color: { type: Type.STRING }
           },
@@ -132,17 +132,25 @@ export const analyzeClothing = async (
 /**
  * Generates a completely new random clothing item using AI
  */
-export const generateNewClothingItem = async (gender: Gender): Promise<Omit<ClothingItem, 'id'>> => {
+export const generateNewClothingItem = async (gender: Gender, category: Category, weather: WeatherCondition): Promise<Omit<ClothingItem, 'id'>> => {
   return withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getApiKey() });
+
+    const weatherContext = weather.condition === 'Random'
+      ? "a random seasonal context (pick one among: crisp autumn, hot summer, cold winter, or fresh spring)"
+      : `${weather.condition} weather`;
 
     // Step 1: Brainstorm the item details
     const ideaResponse = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
-      contents: `Dream up a unique, high-fashion clothing item for a ${gender === 'girl' ? 'stylish young woman' : 'fashionable young man'}. 
-      Pick a random category from: Shirt, Sweater, Bottom, Skirt, Dress, Shoes, or Accessory.
-      Provide a professional fashion description and a specific color. 
-      Also provide a detailed visual prompt for an image generator to create this item on a clean white background. 
+      contents: `Dream up a unique, high-fashion ${category} specifically designed for a ${gender === 'girl' ? 'young woman' : 'young man'} in ${weatherContext}. 
+      Ensure the style, material, and type of the ${category} are traditionally representative and stylistically appropriate for a ${gender === 'girl' ? 'female' : 'male'} wardrobe.
+      The item must be functional and fashionable for ${weatherContext}.
+      
+      (e.g., if Shoes & Winter: suggest boots; if Top & Summer: suggest a breezy blouse or tee; if Bottom & Rainy: suggest durable trousers).
+      
+      Provide a very concise professional fashion description (maximum 15 words) and a specific color. 
+      Also provide a detailed visual prompt for an image generator to create this ${category} on a clean white background. 
       The item should look realistic, sophisticated, and trendy.`,
       config: {
         responseMimeType: "application/json",
@@ -200,15 +208,19 @@ export const selectBestOutfit = async (
     const shuffledCloset = [...closet].sort(() => Math.random() - 0.5);
     const closetPrompt = shuffledCloset.map(item => `ID: ${item.id}, Cat: ${item.category}, Desc: ${item.description}, Color: ${item.color}`).join('\n');
 
+    const weatherInfo = weather.condition === 'Random'
+      ? 'any weather/season (be creative!)'
+      : weather.condition;
+
     const prompt = `
       You are a professional fashion stylist.
-      User Info: Gender: ${gender}, Weather: ${weather.condition}
+      User Info: Gender: ${gender}, Weather: ${weatherInfo}
       Closet:
       ${closetPrompt}
       
       Instructions:
-      1. Assemble a complete outfit.
-      2. If 'Dress' is selected, no Top/Bottom/Skirt. Otherwise, 1 Top (Top, Shirt, Sweater) and 1 Bottom (Bottom, Skirt).
+      1. Assemble a complete outfit that is stylistically appropriate for a ${gender === 'girl' ? 'woman' : 'man'}.
+      2. If 'Dress' is selected, no Top (Shirt, Sweater, Top) or Bottom (Skirt, Bottom). Otherwise, 1 Top (Shirt, Sweater, or Top) and 1 Bottom (Skirt, or Bottom).
       3. Exactly 1 pair of Shoes.
       4. Avoid IDs: ${previousIds.join(', ')}
       
