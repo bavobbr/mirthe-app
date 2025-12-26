@@ -132,7 +132,7 @@ export const analyzeClothing = async (
 /**
  * Generates a completely new random clothing item using AI
  */
-export const generateNewClothingItem = async (gender: Gender, category: Category, weather: WeatherCondition): Promise<Omit<ClothingItem, 'id'>> => {
+export const generateNewClothingItem = async (gender: Gender, category: Category, weather: WeatherCondition, existingItems: ClothingItem[] = []): Promise<Omit<ClothingItem, 'id'>> => {
   return withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
@@ -140,19 +140,25 @@ export const generateNewClothingItem = async (gender: Gender, category: Category
       ? "a random seasonal context (pick one among: crisp autumn, hot summer, cold winter, or fresh spring)"
       : `${weather.condition} weather`;
 
+    const existingContext = existingItems.length > 0
+      ? `Existing items in this closet: ${existingItems.slice(-10).map(i => `${i.color} ${i.description}`).join(', ')}. Avoid creating anything too similar to these.`
+      : '';
+
     // Step 1: Brainstorm the item details
     const ideaResponse = await ai.models.generateContent({
       model: 'gemini-2.0-flash',
-      contents: `Dream up a unique, high-fashion ${category} specifically designed for a ${gender === 'girl' ? 'young woman' : 'young man'} in ${weatherContext}. 
+      contents: `Dream up a unique, high-fashion ${category} specifically designed for a ${gender === 'girl' ? 'young woman' : 'young man'} in ${weatherContext}.
       Ensure the style, material, and type of the ${category} are traditionally representative and stylistically appropriate for a ${gender === 'girl' ? 'female' : 'male'} wardrobe.
       The item must be functional and fashionable for ${weatherContext}.
-      
+      ${existingContext}
+
       (e.g., if Shoes & Winter: suggest boots; if Shirt & Summer: suggest a breezy tee; if Bottom & Rainy: suggest durable trousers).
-      
-      Provide a very concise professional fashion description (maximum 15 words) and a specific color. 
-      Also provide a detailed visual prompt for an image generator to create this ${category} on a clean white background. 
+
+      Provide a very concise professional fashion description (maximum 15 words) and a specific color.
+      Also provide a detailed visual prompt for an image generator to create this ${category} on a clean white background.
       The item should look realistic, sophisticated, and trendy.`,
       config: {
+        temperature: 1.0,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,

@@ -35,7 +35,7 @@ export const OutfitSection: React.FC<OutfitSectionProps> = ({
     t,
 }) => {
     return (
-        <div className="lg:col-span-5 sticky top-6">
+        <div className="lg:col-span-4 sticky top-6">
             <div className={`${t.bgMain} p-8 rounded-[40px] shadow-2xl border ${t.borderMain} flex flex-col items-center text-center transition-all duration-300`}>
                 {generatedOutfit ? (
                     <>

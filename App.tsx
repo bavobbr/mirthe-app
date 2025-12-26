@@ -319,7 +319,7 @@ const App: React.FC = () => {
     setError(null);
     setShowCategoryPicker(false);
     try {
-      const newItem = await generateNewClothingItem(gender, category, weather);
+      const newItem = await generateNewClothingItem(gender, category, weather, closet);
       const compressedUrl = await downscaleBase64Image(newItem.url);
 
       const itemWithId: ClothingItem = {
@@ -347,62 +347,64 @@ const App: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen pb-20 max-w-6xl mx-auto px-4 sm:px-6 relative transition-colors duration-500">
+    <div className="min-h-screen pb-20 max-w-7xl mx-auto px-4 sm:px-6 relative transition-colors duration-500">
       <Header t={t} onOpenAbout={() => setShowAboutModal(true)} />
 
-      <main className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-7 space-y-8">
-          <SettingsSection
+      <main className="relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-8 space-y-8">
+            <SettingsSection
+              gender={gender}
+              setGender={setGender}
+              weather={weather}
+              setWeather={setWeather}
+              t={t}
+            />
+
+            <ClosetSection
+              closet={filteredCloset}
+              totalItems={closet.length}
+              gender={gender}
+              isGeneratingItem={isGeneratingItem}
+              isAnalyzing={isAnalyzing}
+              showAllClosetItems={showAllClosetItems}
+              setShowAllClosetItems={setShowAllClosetItems}
+              setShowCategoryPicker={setShowCategoryPicker}
+              setSelectedItem={setSelectedItem}
+              removeItem={removeItem}
+              startCamera={startCamera}
+              fileInputRef={fileInputRef}
+              handleFileUpload={handleFileUpload}
+              maxVisibleItems={maxVisibleItems}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              activeFilter={activeFilter}
+              setActiveFilter={setActiveFilter}
+              t={t}
+            />
+
+            {error && (
+              <div className={`${t.errorBg} p-4 rounded-2xl flex items-center gap-3 font-medium animate-pulse border-2`}>
+                <svg className={`w-6 h-6 ${t.textStrong}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {error}
+              </div>
+            )}
+          </div>
+
+          <OutfitSection
+            generatedOutfit={generatedOutfit}
             gender={gender}
-            setGender={setGender}
-            weather={weather}
-            setWeather={setWeather}
+            isGenerating={isGenerating}
+            illustrationStyle={illustrationStyle}
+            loadingMessage={loadingMessage}
+            timer={timer}
+            handleGenerateOutfit={handleGenerateOutfit}
+            setShowOutfitModal={setShowOutfitModal}
             t={t}
           />
-
-          <ClosetSection
-            closet={filteredCloset}
-            totalItems={closet.length}
-            gender={gender}
-            isGeneratingItem={isGeneratingItem}
-            isAnalyzing={isAnalyzing}
-            showAllClosetItems={showAllClosetItems}
-            setShowAllClosetItems={setShowAllClosetItems}
-            setShowCategoryPicker={setShowCategoryPicker}
-            setSelectedItem={setSelectedItem}
-            removeItem={removeItem}
-            startCamera={startCamera}
-            fileInputRef={fileInputRef}
-            handleFileUpload={handleFileUpload}
-            maxVisibleItems={maxVisibleItems}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            activeFilter={activeFilter}
-            setActiveFilter={setActiveFilter}
-            t={t}
-          />
-
-          {error && (
-            <div className={`${t.errorBg} p-4 rounded-2xl flex items-center gap-3 font-medium animate-pulse border-2`}>
-              <svg className={`w-6 h-6 ${t.textStrong}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {error}
-            </div>
-          )}
         </div>
-
-        <OutfitSection
-          generatedOutfit={generatedOutfit}
-          gender={gender}
-          isGenerating={isGenerating}
-          illustrationStyle={illustrationStyle}
-          loadingMessage={loadingMessage}
-          timer={timer}
-          handleGenerateOutfit={handleGenerateOutfit}
-          setShowOutfitModal={setShowOutfitModal}
-          t={t}
-        />
       </main>
 
       {/* Modals */}
