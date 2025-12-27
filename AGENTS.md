@@ -1,14 +1,17 @@
 # AGENTS.md - Dressed by Mirthe
 
+**Live App: [dressedbymirthe.app](https://dressedbymirthe.app/)**
+
 ## Overview
 Dressed by Mirthe is a modular React + TypeScript application. It uses Google Gemini AI to transform personal wardrobes into a creative, weather-aware styling experience. Users can manage their closet, capture new items via camera, and generate full outfit illustrations in multiple artistic styles.
 
 Core flows:
-- **Closet Management**: Users interact with a grid of items, view details, and remove garments.
-- **AI Analysis**: Gemini 2.0 Flash analyzes uploaded/captured images to extract category, color, and descriptions.
-- **Weather-Aware Styling**: The stylist selects outfits based on precise weather conditions (Sunny, Rainy, Cold, etc.) or a flexible "Random" context.
-- **Multi-Style Illustration**: Gemini 2.5 Flash Image generates high-fidelity avatars wearing the selected items in Hand-Drawn, Realistic, or Cartoon styles.
-- **AI Dreams**: "Generate" feature creates brand-new trendy items and their product photography.
+- **Closet Management**: Users interact with an optimized grid of items, manage searches, and filter by category pills.
+- **AI Analysis**: Gemini 2.0 Flash analyzes images to extract category, color, and descriptions.
+- **PWA Powered**: Fully installable Progressive Web App with service workers and offline asset caching.
+- **Weather-Aware Styling**: The stylist selects outfits based on precise weather conditions or a flexible "Random" context.
+- **Multi-Style Illustration**: Gemini 2.5 Flash Image generates high-fidelity avatars wearing the selected items in Sketch, Studio, or Toon styles.
+- **AI Dreams**: "Generate" feature creates unique trendy items. Now with **Closet Awareness** to prevent duplicate suggestions.
 
 ## Project Structure
 The app has been refactored for modularity and high performance:

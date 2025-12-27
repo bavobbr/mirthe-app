@@ -6,13 +6,17 @@
 
 An AI-powered closet and outfit generator. Keep track of your wardrobe, get weather-aware outfit suggestions, and visualize them with AI-generated illustrations.
 
+**Live App: [dressedbymirthe.app](https://dressedbymirthe.app/)**
+
 Designed by Mirthe Bruylandt. Developed by Bavo Bruylandt.
 
 ## Core Features
 
-- **Smart Closet**: A curated collection of clothing with auto-calculated categories, colors, and descriptions.
+- **Smart Closet**: A curated collection of clothing with auto-calculated categories, colors, and descriptions. Now with **Search & Filtering**.
 - **AI-Powered Input**: Upload files or capture photos directly via your camera. Gemini auto-analyzes every new item.
-- **Weather-Aware Stylist**: Choose from a variety of weather conditions (Sunny, Rainy, Snowy, etc.) or go for "Random" to let the AI be creative.
+- **PWA Ready**: Install the app on your home screen for a native-like experience on iOS and Android.
+- **Weather-Aware Stylist**: Choose from a variety of weather conditions or go for "Random".
+- **Infinite Uniqueness**: AI generation takes your current closet into account to avoid repeats.
 - **High-Quality Illustrations**: Generate a complete outfit visualization in three distinct styles:
   - 🎨 **Hand-Drawn**: Artistic, watercolor-style sketches.
   - 📸 **Realistic**: High-end editorial studio photography.
